@@ -87,6 +87,10 @@
 
   function rotateServiceCodePlaceholder() {
     if (!els.serviceCodePlaceholder || !isServices()) return;
+    if (els.serviceCode?.value.trim()) {
+      syncServicePlaceholderVisibility();
+      return;
+    }
 
     els.serviceCodePlaceholder.classList.add('is-leaving');
 
@@ -314,10 +318,6 @@
 
   function setServiceControlsLocked(locked) {
     serviceBusy = locked;
-
-    els.serviceCode?.addEventListener('input', syncServicePlaceholderVisibility);
-    els.serviceCode?.addEventListener('focus', syncServicePlaceholderVisibility);
-    els.serviceCode?.addEventListener('blur', syncServicePlaceholderVisibility);
 
     [
       els.serviceCode,
@@ -648,6 +648,10 @@
   }
 
   function bind() {
+    els.serviceCode?.addEventListener('input', syncServicePlaceholderVisibility);
+    els.serviceCode?.addEventListener('focus', syncServicePlaceholderVisibility);
+    els.serviceCode?.addEventListener('blur', syncServicePlaceholderVisibility);
+
     document.querySelectorAll('input[name="canal"]').forEach(input => {
       input.addEventListener('change', syncMode);
     });
