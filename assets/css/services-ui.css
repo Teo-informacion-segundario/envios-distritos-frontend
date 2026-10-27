@@ -1,0 +1,214 @@
+.field > .segmented[aria-label="Canal"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.service-box {
+  margin-top: 4px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-soft);
+}
+
+.service-box__heading {
+  margin-bottom: 10px;
+}
+
+.service-period-note {
+  margin: 0 0 18px;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.service-type-segmented {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.service-type-segmented .segment span {
+  padding: 0 8px;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.service-districts {
+  display: grid;
+  gap: 12px;
+}
+
+.service-district-card {
+  padding: 16px 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+}
+
+.service-district-card--optional {
+  border-style: dashed;
+}
+
+.service-district-card__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.service-district-card__title strong {
+  font-size: 13px;
+}
+
+.service-district-card__title span {
+  color: var(--text-soft);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.service-total-strip {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--brand-700);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.service-total-strip > div {
+  display: grid;
+  gap: 3px;
+}
+
+.service-total-strip span,
+.service-total-strip small {
+  color: #dcd9ff;
+}
+
+.service-total-strip span {
+  font-size: 11px;
+}
+
+.service-total-strip strong {
+  font-size: 22px;
+}
+
+.service-total-strip small {
+  max-width: 52%;
+  text-align: right;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.service-result-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.service-result-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) repeat(3, auto);
+  gap: 10px 14px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 11px;
+}
+
+.service-result-row strong {
+  font-size: 12px;
+}
+
+.service-result-stat {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+
+.service-result-stat span {
+  opacity: .72;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.service-result-stat b {
+  font-size: 12px;
+}
+
+.service-reuse-panel {
+  margin-top: 18px;
+  padding: 15px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
+  background: var(--warning-soft);
+}
+
+.service-reuse-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--warning);
+  cursor: pointer;
+}
+
+.service-reuse-option input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+  accent-color: var(--brand-500);
+}
+
+.service-reuse-option span {
+  display: grid;
+  gap: 4px;
+}
+
+.service-reuse-option strong {
+  font-size: 13px;
+}
+
+.service-reuse-option small {
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+html[data-theme="dark"] .service-district-card {
+  background: rgba(255,255,255,.035);
+}
+
+@media (max-width: 760px) {
+  .field > .segmented[aria-label="Canal"],
+  .service-type-segmented {
+    grid-template-columns: 1fr;
+  }
+
+  .service-total-strip {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .service-total-strip small {
+    max-width: none;
+    text-align: left;
+  }
+
+  .service-result-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .service-result-row > strong {
+    grid-column: 1 / -1;
+  }
+
+  .service-result-stat {
+    text-align: left;
+  }
+}

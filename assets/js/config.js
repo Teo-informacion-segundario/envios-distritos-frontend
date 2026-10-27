@@ -28,6 +28,11 @@
       ? 'https://paneln8n.toga.pe/webhook/envios-distritos/solicitud'
       : '/api/gateway/envios-distritos',
 
+    // SERVICIOS siempre pasa por FastAPI; nunca se expone N8N_GATEWAY_SECRET al navegador.
+    servicesGateway: isLocal
+      ? ''
+      : '/api/gateway/servicios',
+
     authEnabled: !isLocal,
     apiBase: '/api',
     defaultPeriod: '202607',

@@ -50,6 +50,7 @@
 
   <link rel="stylesheet" href="assets/css/styles.css" />
   <link rel="stylesheet" href="assets/css/reuse-ui.css" />
+  <link rel="stylesheet" href="assets/css/services-ui.css" />
   <link rel="stylesheet" href="assets/css/layout-fix.css" />
   <link rel="stylesheet" href="assets/css/project-id-validation.css" />
   <link rel="stylesheet" href="assets/css/professional-ui.css" />
@@ -104,7 +105,7 @@
         <div>
           <span class="hero-kicker">Flujo controlado</span>
           <h2>Genera data nueva y reutiliza lotes sin duplicar leads.</h2>
-          <p>El sistema respeta periodo + canal + identidad y mantiene independiente el consumo de EMAIL y WHATSAPP.</p>
+          <p>El sistema respeta periodo + canal + identidad y mantiene independientes los consumos de EMAIL, WHATSAPP y SERVICIOS.</p>
         </div>
         <div class="hero-steps" aria-label="Pasos del proceso">
           <div class="step is-active" data-step="1"><span>1</span><small>Configurar</small></div>
@@ -143,11 +144,15 @@
                     <input type="radio" name="canal" value="WHATSAPP" checked />
                     <span>WHATSAPP</span>
                   </label>
+                  <label class="segment">
+                    <input type="radio" name="canal" value="SERVICIOS" />
+                    <span>SERVICIOS</span>
+                  </label>
                 </div>
               </div>
             </div>
 
-            <div class="field-grid field-grid--2">
+            <div class="field-grid field-grid--2" id="standardRequestFields">
               <label class="field">
                 <span>Distrito</span>
                 <select id="distrito" name="distrito" required></select>
@@ -158,6 +163,90 @@
                 <input id="cantidad" name="cantidad" type="number" min="1" step="1" placeholder="Ej. 5000" required />
                 <small>Solo números enteros mayores a 0.</small>
               </label>
+            </div>
+
+            <div id="serviceFields" class="service-box is-hidden">
+              <div class="subheading service-box__heading">
+                <div>
+                  <span class="subheading-kicker">Canal SERVICIOS</span>
+                  <h4>Configura el servicio solicitado</h4>
+                </div>
+                <span class="fixed-pill">periodo automático</span>
+              </div>
+
+              <p class="service-period-note">
+                El periodo se resuelve automáticamente desde CONTROL DE CIERRES. Puedes solicitar uno o dos distritos lógicos.
+              </p>
+
+              <div class="field-grid field-grid--2">
+                <label class="field">
+                  <span>Código de servicio</span>
+                  <input id="serviceCode" autocomplete="off" placeholder="Ej. SERVICIO_CLIENTE_001" />
+                  <small>Debe ser único dentro del periodo operativo.</small>
+                </label>
+
+                <div class="field">
+                  <span>Tipo de servicio</span>
+                  <div class="segmented service-type-segmented" role="radiogroup" aria-label="Tipo de servicio">
+                    <label class="segment">
+                      <input type="radio" name="serviceType" value="EMAIL" checked />
+                      <span>EMAIL</span>
+                    </label>
+                    <label class="segment">
+                      <input type="radio" name="serviceType" value="WHATSAPP" />
+                      <span>WHATSAPP</span>
+                    </label>
+                    <label class="segment">
+                      <input type="radio" name="serviceType" value="EMAIL_Y_WHATSAPP" />
+                      <span>EMAIL Y WHATSAPP</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="service-districts">
+                <div class="service-district-card">
+                  <div class="service-district-card__title">
+                    <strong>Distrito 1</strong>
+                    <span>Obligatorio</span>
+                  </div>
+                  <div class="field-grid field-grid--2">
+                    <label class="field">
+                      <span>Distrito</span>
+                      <select id="serviceDistrict1"></select>
+                    </label>
+                    <label class="field">
+                      <span>Cantidad</span>
+                      <input id="serviceQuantity1" type="number" min="1" step="1" placeholder="Ej. 5000" />
+                    </label>
+                  </div>
+                </div>
+
+                <div class="service-district-card service-district-card--optional">
+                  <div class="service-district-card__title">
+                    <strong>Distrito 2</strong>
+                    <span>Opcional</span>
+                  </div>
+                  <div class="field-grid field-grid--2">
+                    <label class="field">
+                      <span>Distrito</span>
+                      <select id="serviceDistrict2"></select>
+                    </label>
+                    <label class="field">
+                      <span>Cantidad</span>
+                      <input id="serviceQuantity2" type="number" min="1" step="1" placeholder="Ej. 2500" disabled />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="service-total-strip">
+                <div>
+                  <span>Total solicitado por tipo</span>
+                  <strong id="serviceTotal">0</strong>
+                </div>
+                <small id="serviceExportEstimate">La estimación final se mostrará al consultar disponibilidad.</small>
+              </div>
             </div>
 
             <div id="whatsappFields" class="whatsapp-box">
@@ -214,6 +303,7 @@
             <dl class="summary-list">
               <div><dt>Periodo</dt><dd id="summaryPeriodo">202607</dd></div>
               <div><dt>Canal</dt><dd id="summaryCanal">WHATSAPP</dd></div>
+              <div id="summaryServiceCodeRow" class="is-hidden"><dt>Código servicio</dt><dd id="summaryServiceCode">—</dd></div>
               <div><dt>Distrito</dt><dd id="summaryDistrito">JESUS MARIA</dd></div>
               <div><dt>Cantidad</dt><dd id="summaryCantidad">—</dd></div>
             </dl>
@@ -240,19 +330,19 @@
 
         <div class="metric-grid">
           <article class="metric-card">
-            <span>Total elegibles</span>
+            <span id="metricTotalLabel">Total elegibles</span>
             <strong id="metricTotal">0</strong>
           </article>
           <article class="metric-card">
-            <span>Usados</span>
+            <span id="metricUsedLabel">Usados</span>
             <strong id="metricUsed">0</strong>
           </article>
           <article class="metric-card metric-card--accent">
-            <span>Disponibles</span>
+            <span id="metricAvailableLabel">Disponibles</span>
             <strong id="metricAvailable">0</strong>
           </article>
           <article class="metric-card">
-            <span>Solicitados</span>
+            <span id="metricRequestedLabel">Solicitados</span>
             <strong id="metricRequested">0</strong>
           </article>
         </div>
@@ -273,6 +363,16 @@
           </div>
 
           <div id="lotsList" class="lots-list"></div>
+        </div>
+
+        <div id="serviceReusePanel" class="service-reuse-panel is-hidden">
+          <label class="service-reuse-option" for="serviceAllowReuse">
+            <input id="serviceAllowReuse" type="checkbox" />
+            <span>
+              <strong>Permitir reutilización</strong>
+              <small id="serviceReuseHelp">La solicitud necesita reutilizar registros de servicios anteriores para completarse.</small>
+            </span>
+          </label>
         </div>
 
         <div class="generate-bar">
@@ -303,6 +403,7 @@
   <script src="assets/js/config.js"></script>
   <script src="assets/js/project-id-validation.js"></script>
   <script src="assets/js/app.js"></script>
+  <script src="assets/js/services.js"></script>
   <script src="assets/js/history.js"></script>
 </body>
 </html>
