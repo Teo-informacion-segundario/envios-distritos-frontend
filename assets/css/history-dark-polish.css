@@ -1,0 +1,253 @@
+/* =========================================================
+   Historial · pulido premium para modo oscuro
+   Se carga después de history-ui.css para mantener aislados
+   estos ajustes visuales sin afectar el tema claro.
+   ========================================================= */
+
+.history-count {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.history-count__glow {
+  position: absolute;
+  inset: -45%;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(20%, -14%, 0);
+  transition: opacity .28s ease, transform .45s cubic-bezier(.2,.8,.2,1);
+}
+
+.history-count:hover .history-count__glow {
+  opacity: 1;
+  transform: translate3d(4%, -2%, 0) scale(1.06);
+}
+
+.history-channel {
+  gap: 7px;
+  justify-content: center;
+  min-width: 92px;
+  transition:
+    transform .18s cubic-bezier(.2,.8,.2,1),
+    box-shadow .18s ease,
+    border-color .18s ease,
+    filter .18s ease;
+}
+
+.history-channel__dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .72;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.history-table tbody tr:hover .history-channel {
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] .history-view {
+  border-color: rgba(196, 190, 255, .18) !important;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(137, 126, 255, .13), transparent 24%),
+    linear-gradient(145deg, #2d2696 0%, #272087 48%, #211a79 100%) !important;
+  box-shadow:
+    0 26px 68px rgba(5, 2, 48, .28),
+    inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+
+html[data-theme="dark"] .history-grid-bg {
+  opacity: .22;
+  background-image:
+    linear-gradient(to right, rgba(201, 197, 255, .08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(201, 197, 255, .08) 1px, transparent 1px);
+}
+
+html[data-theme="dark"] .history-title-wrap h2 {
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(255,255,255,.04);
+}
+
+html[data-theme="dark"] .history-title-wrap p {
+  color: rgba(238, 236, 255, .78);
+}
+
+html[data-theme="dark"] .history-count {
+  min-width: 126px;
+  padding: 14px 18px;
+  border: 1px solid rgba(229, 226, 255, .22);
+  background:
+    linear-gradient(145deg, rgba(247,246,255,.96), rgba(211,206,255,.92));
+  box-shadow:
+    0 16px 36px rgba(9, 4, 73, .24),
+    inset 0 1px 0 rgba(255,255,255,.90),
+    inset 0 -1px 0 rgba(73,58,255,.10);
+}
+
+html[data-theme="dark"] .history-count__glow {
+  background: radial-gradient(circle, rgba(118,107,255,.46), transparent 64%);
+}
+
+html[data-theme="dark"] .history-count strong {
+  color: #2f27a9;
+  font-size: 24px;
+  font-weight: 850;
+  text-shadow: 0 1px 0 rgba(255,255,255,.5);
+}
+
+html[data-theme="dark"] .history-count__label {
+  color: rgba(47,39,169,.68);
+  font-weight: 800;
+}
+
+html[data-theme="dark"] .history-search__input {
+  background:
+    linear-gradient(180deg, rgba(25,18,112,.96), rgba(20,14,96,.96)) !important;
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 12px 32px rgba(4,2,45,.16);
+}
+
+html[data-theme="dark"] .history-search__input::placeholder {
+  color: rgba(235,232,255,.62);
+}
+
+html[data-theme="dark"] .history-search__inner-border {
+  border-color: rgba(218,214,255,.13);
+}
+
+html[data-theme="dark"] .history-filter-button {
+  border-color: rgba(207,202,255,.22);
+  background:
+    linear-gradient(180deg, rgba(94,82,214,.60), rgba(50,40,157,.82)) !important;
+  color: #fff;
+  box-shadow:
+    0 10px 24px rgba(4,2,45,.20),
+    inset 0 1px 0 rgba(255,255,255,.10);
+}
+
+html[data-theme="dark"] .history-filter-button:hover {
+  border-color: rgba(232,229,255,.42);
+  box-shadow:
+    0 12px 30px rgba(4,2,45,.24),
+    0 0 22px rgba(118,107,255,.18);
+}
+
+html[data-theme="dark"] .history-refresh {
+  border-color: rgba(211,207,255,.18);
+  background: rgba(255,255,255,.055);
+  color: #f8f7ff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+html[data-theme="dark"] .history-refresh:hover {
+  border-color: rgba(211,207,255,.34);
+  background: rgba(255,255,255,.085);
+  box-shadow: 0 12px 28px rgba(5,2,48,.18);
+}
+
+html[data-theme="dark"] .history-table-shell {
+  border-color: rgba(201,197,255,.17) !important;
+  background:
+    linear-gradient(180deg, rgba(40,32,139,.88), rgba(32,25,121,.92)) !important;
+  box-shadow:
+    0 22px 48px rgba(5,2,48,.22),
+    inset 0 1px 0 rgba(255,255,255,.045) !important;
+}
+
+html[data-theme="dark"] .history-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+html[data-theme="dark"] .history-table th {
+  background:
+    linear-gradient(180deg, rgba(100,88,222,.48), rgba(79,67,194,.38)) !important;
+  color: rgba(255,255,255,.92);
+  border-bottom: 1px solid rgba(220,216,255,.14);
+  text-shadow: 0 1px 0 rgba(0,0,0,.12);
+}
+
+html[data-theme="dark"] .history-table td {
+  color: rgba(255,255,255,.93);
+  border-bottom-color: rgba(220,216,255,.10);
+  background: rgba(255,255,255,.018);
+}
+
+html[data-theme="dark"] .history-table tbody tr:nth-child(even) td {
+  background: rgba(255,255,255,.032);
+}
+
+html[data-theme="dark"] .history-table tbody tr {
+  transition: background .2s ease, transform .2s cubic-bezier(.2,.8,.2,1);
+}
+
+html[data-theme="dark"] .history-table tbody tr:hover td {
+  background: rgba(150,140,255,.105);
+}
+
+html[data-theme="dark"] .history-table tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 rgba(184,176,255,.64);
+}
+
+html[data-theme="dark"] .history-table td strong {
+  color: #fff;
+  font-weight: 820;
+}
+
+html[data-theme="dark"] .history-channel {
+  border: 1px solid rgba(255,255,255,.56);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.99), rgba(230,227,255,.96));
+  color: #3229ad;
+  box-shadow:
+    0 8px 18px rgba(5,2,48,.19),
+    inset 0 1px 0 rgba(255,255,255,1),
+    inset 0 -1px 0 rgba(73,58,255,.10);
+  text-shadow: none;
+}
+
+html[data-theme="dark"] .history-channel--whatsapp {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #e9e6ff 100%);
+  color: #241b98;
+}
+
+html[data-theme="dark"] .history-channel--email {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f0eeff 100%);
+  color: #382fb6;
+}
+
+html[data-theme="dark"] .history-channel:hover {
+  filter: brightness(1.035);
+  border-color: rgba(255,255,255,.78);
+  box-shadow:
+    0 11px 24px rgba(5,2,48,.23),
+    0 0 18px rgba(224,220,255,.10),
+    inset 0 1px 0 #fff;
+}
+
+html[data-theme="dark"] .history-empty,
+html[data-theme="dark"] .history-loading,
+html[data-theme="dark"] .history-error {
+  color: rgba(235,232,255,.74);
+}
+
+html[data-theme="dark"] .history-empty strong,
+html[data-theme="dark"] .history-error strong {
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-count__glow,
+  .history-channel {
+    transition: none !important;
+  }
+}

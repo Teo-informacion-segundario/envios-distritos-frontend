@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Generación de envíos V2 | TOGA</title>
+  <meta name="description" content="Frontend local para generación y control de cortes por distrito." />
+
+  <script>
+    (() => {
+      const hostname = String(window.location.hostname || '').toLowerCase();
+      const isLocal = (
+        window.location.protocol === 'file:' ||
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '::1'
+      );
+
+      if (!isLocal) {
+        document.documentElement.classList.add('auth-boot-pending');
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      }
+    })();
+  </script>
+  <style>
+    html.auth-boot-pending,
+    html.auth-boot-pending body {
+      min-height: 100%;
+      overflow: hidden !important;
+      background: #f8f8fc;
+    }
+
+    html.auth-boot-pending .app-shell,
+    html.auth-boot-pending .toast {
+      visibility: hidden !important;
+    }
+
+    html.auth-boot-pending body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 2147483000;
+      background: #f8f8fc;
+    }
+
+    body.auth-login-visible {
+      overflow: hidden !important;
+    }
+  </style>
+
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/reuse-ui.css" />
+  <link rel="stylesheet" href="assets/css/layout-fix.css" />
+  <link rel="stylesheet" href="assets/css/project-id-validation.css" />
+  <link rel="stylesheet" href="assets/css/professional-ui.css" />
+  <link rel="stylesheet" href="assets/css/history-ui.css" />
+  <link rel="stylesheet" href="assets/css/history-dark-polish.css" />
+  <link rel="stylesheet" href="assets/css/history-pagination.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <a class="brand" href="#" aria-label="Inicio">
+        <span class="brand-mark" aria-hidden="true">
+          <span class="brand-mark__a"></span>
+          <span class="brand-mark__b"></span>
+        </span>
+        <span class="brand-copy">
+          <strong>Envíos Data</strong>
+          <small>Nexo Inmobiliario</small>
+        </span>
+      </a>
+
+      <nav class="nav-list">
+        <button class="nav-item is-active" type="button" data-view="generator">
+          <span class="nav-icon">⌁</span>
+          <span>Generar corte</span>
+        </button>
+        <button class="nav-item" type="button" data-view="history">
+          <span class="nav-icon">◷</span>
+          <span>Historial</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="environment-pill" id="environmentPill">Modo local</div>
+        <p>Diseñado sin framework para migración directa a WordPress.</p>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">RECORTE DE ENVÍOS DATA</p>
+          <h1>Generación de cortes</h1>
+        </div>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Cambiar tema">
+          <span class="theme-toggle__icon" id="themeIcon">☾</span>
+          <span class="theme-toggle__label" id="themeLabel">Oscuro</span>
+        </button>
+      </header>
+
+      <section class="hero-card">
+        <div>
+          <span class="hero-kicker">Flujo controlado</span>
+          <h2>Genera data nueva y reutiliza lotes sin duplicar leads.</h2>
+          <p>El sistema respeta periodo + canal + identidad y mantiene independiente el consumo de EMAIL y WHATSAPP.</p>
+        </div>
+        <div class="hero-steps" aria-label="Pasos del proceso">
+          <div class="step is-active" data-step="1"><span>1</span><small>Configurar</small></div>
+          <div class="step" data-step="2"><span>2</span><small>Disponibilidad</small></div>
+          <div class="step" data-step="3"><span>3</span><small>Reutilización</small></div>
+          <div class="step" data-step="4"><span>4</span><small>Resultado</small></div>
+        </div>
+      </section>
+
+      <div class="content-grid">
+        <section class="panel panel--form">
+          <div class="panel-heading">
+            <div>
+              <span class="section-number">01</span>
+              <h3>Configura la solicitud</h3>
+            </div>
+            <span class="status-dot" title="Formulario listo"></span>
+          </div>
+
+          <form id="requestForm" novalidate>
+            <div class="field-grid field-grid--2">
+              <label class="field">
+                <span>Periodo operativo</span>
+                <input id="periodo" name="periodo" value="202607" inputmode="numeric" maxlength="6" autocomplete="off" />
+                <small>Luego se leerá automáticamente desde CONTROL DE CIERRES.</small>
+              </label>
+
+              <div class="field">
+                <span>Canal</span>
+                <div class="segmented" role="radiogroup" aria-label="Canal">
+                  <label class="segment">
+                    <input type="radio" name="canal" value="EMAIL" />
+                    <span>EMAIL</span>
+                  </label>
+                  <label class="segment">
+                    <input type="radio" name="canal" value="WHATSAPP" checked />
+                    <span>WHATSAPP</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-grid field-grid--2">
+              <label class="field">
+                <span>Distrito</span>
+                <select id="distrito" name="distrito" required></select>
+              </label>
+
+              <label class="field">
+                <span>Cantidad solicitada</span>
+                <input id="cantidad" name="cantidad" type="number" min="1" step="1" placeholder="Ej. 5000" required />
+                <small>Solo números enteros mayores a 0.</small>
+              </label>
+            </div>
+
+            <div id="whatsappFields" class="whatsapp-box">
+              <div class="subheading">
+                <div>
+                  <span class="subheading-kicker">Solo WhatsApp</span>
+                  <h4>Parámetros de campaña</h4>
+                </div>
+                <span class="fixed-pill">retargeting · whatsapp</span>
+              </div>
+
+              <div class="field-grid field-grid--3">
+                <label class="field">
+                  <span>Project ID 1</span>
+                  <input id="projectId1" inputmode="numeric" maxlength="4" pattern="[0-9]{3,4}" autocomplete="off" placeholder="Ej. 4309" />
+                </label>
+                <label class="field">
+                  <span>Project ID 2</span>
+                  <input id="projectId2" inputmode="numeric" maxlength="4" pattern="[0-9]{3,4}" autocomplete="off" placeholder="Ej. 3780" />
+                </label>
+                <label class="field">
+                  <span>Project ID 3</span>
+                  <input id="projectId3" inputmode="numeric" maxlength="4" pattern="[0-9]{3,4}" autocomplete="off" placeholder="Ej. 4118" />
+                </label>
+              </div>
+
+              <p class="project-id-rule" id="projectIdRule">Cada Project ID debe tener 3 o 4 dígitos y los tres deben ser diferentes.</p>
+
+              <label class="field">
+                <span>UTM Campaign</span>
+                <input id="utmCampaign" placeholder="Ej. barranco_010926" autocomplete="off" />
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button class="button button--ghost" type="reset" id="resetButton">Limpiar</button>
+              <button class="button button--primary" type="submit" id="availabilityButton">
+                <span>Consultar disponibilidad</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="panel panel--summary">
+          <div class="panel-heading">
+            <div>
+              <span class="section-number">RESUMEN</span>
+              <h3>Solicitud actual</h3>
+            </div>
+          </div>
+
+          <div class="summary-card">
+            <dl class="summary-list">
+              <div><dt>Periodo</dt><dd id="summaryPeriodo">202607</dd></div>
+              <div><dt>Canal</dt><dd id="summaryCanal">WHATSAPP</dd></div>
+              <div><dt>Distrito</dt><dd id="summaryDistrito">JESUS MARIA</dd></div>
+              <div><dt>Cantidad</dt><dd id="summaryCantidad">—</dd></div>
+            </dl>
+          </div>
+
+          <div class="logic-note">
+            <span class="logic-note__icon">✓</span>
+            <div>
+              <strong>Control de duplicidad activo</strong>
+              <p>Los leads usados por distrito también cuentan dentro de MULTIDISTRITO o LIMA_NORTE en el mismo periodo y canal.</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <section class="panel result-panel is-hidden" id="availabilityPanel" aria-live="polite">
+        <div class="panel-heading panel-heading--results">
+          <div>
+            <span class="section-number">02</span>
+            <h3>Disponibilidad</h3>
+          </div>
+          <span class="result-state" id="availabilityState">Disponible</span>
+        </div>
+
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span>Total elegibles</span>
+            <strong id="metricTotal">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Usados</span>
+            <strong id="metricUsed">0</strong>
+          </article>
+          <article class="metric-card metric-card--accent">
+            <span>Disponibles</span>
+            <strong id="metricAvailable">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Solicitados</span>
+            <strong id="metricRequested">0</strong>
+          </article>
+        </div>
+
+        <div class="availability-message" id="availabilityMessage"></div>
+
+        <div id="reusePanel" class="reuse-panel is-hidden">
+          <div class="reuse-header">
+            <div>
+              <span class="section-number">03</span>
+              <h3>Selecciona lotes para reutilizar</h3>
+              <p id="reuseHelp">Selecciona uno o más lotes para completar los registros faltantes.</p>
+            </div>
+            <div class="missing-counter">
+              <span>Faltan</span>
+              <strong id="metricMissing">0</strong>
+            </div>
+          </div>
+
+          <div id="lotsList" class="lots-list"></div>
+        </div>
+
+        <div class="generate-bar">
+          <div class="generate-summary">
+            <span>Resultado esperado</span>
+            <strong id="expectedResult">—</strong>
+          </div>
+          <button class="button button--primary" id="generateButton" type="button" disabled>
+            Generar corte
+          </button>
+        </div>
+      </section>
+
+      <section class="panel success-panel is-hidden" id="successPanel" aria-live="polite">
+        <div class="success-icon">✓</div>
+        <div class="success-copy">
+          <span class="section-number">04 · COMPLETED</span>
+          <h3>Corte generado correctamente</h3>
+          <p id="successMessage">El lote fue generado y confirmado.</p>
+        </div>
+        <div class="success-details" id="successDetails"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/project-id-validation.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/history.js"></script>
+</body>
+</html>

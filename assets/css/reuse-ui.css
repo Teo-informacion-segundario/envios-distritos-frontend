@@ -1,0 +1,374 @@
+/* Reutilización de lotes · capa visual interactiva
+   Mantiene intacta la lógica de selección de app.js. */
+
+.reuse-panel {
+  position: relative;
+}
+
+.reuse-header {
+  margin-bottom: 2px;
+}
+
+.missing-counter {
+  position: relative;
+  overflow: hidden;
+  min-width: 118px;
+  padding: 14px 16px;
+  border: 1px solid rgba(183, 103, 0, .12);
+  box-shadow: 0 8px 20px rgba(183, 103, 0, .06);
+}
+
+.missing-counter::after {
+  content: "";
+  position: absolute;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  right: -24px;
+  top: -24px;
+  background: currentColor;
+  opacity: .055;
+}
+
+.lots-list {
+  gap: 12px;
+  margin-top: 20px;
+  perspective: 900px;
+}
+
+.lot-card {
+  --lot-accent: var(--brand-500);
+  position: relative;
+  isolation: isolate;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  gap: 16px;
+  min-height: 78px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .58), rgba(255, 255, 255, 0)),
+    var(--surface-soft);
+  cursor: pointer;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(12px) scale(.992);
+  animation: lotEnter .44s cubic-bezier(.2, .8, .2, 1) forwards;
+  transition:
+    transform .24s cubic-bezier(.2, .8, .2, 1),
+    border-color .24s ease,
+    box-shadow .24s ease,
+    background .24s ease;
+}
+
+.lot-card:nth-child(2) { animation-delay: 55ms; }
+.lot-card:nth-child(3) { animation-delay: 110ms; }
+.lot-card:nth-child(4) { animation-delay: 165ms; }
+.lot-card:nth-child(5) { animation-delay: 220ms; }
+.lot-card:nth-child(6) { animation-delay: 275ms; }
+.lot-card:nth-child(n+7) { animation-delay: 320ms; }
+
+.lot-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 17px 0 0 17px;
+  background: linear-gradient(180deg, var(--brand-400), var(--brand-500));
+  opacity: 0;
+  transform: scaleY(.35);
+  transform-origin: center;
+  transition: opacity .24s ease, transform .24s ease;
+}
+
+.lot-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  right: -88px;
+  top: -92px;
+  background: radial-gradient(circle, rgba(73, 58, 255, .12), transparent 68%);
+  opacity: 0;
+  transform: scale(.75);
+  transition: opacity .28s ease, transform .28s ease;
+}
+
+.lot-card:hover {
+  transform: translateY(-3px) scale(1.002);
+  border-color: rgba(73, 58, 255, .28);
+  box-shadow: 0 14px 34px rgba(8, 0, 101, .10);
+}
+
+.lot-card:hover::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.lot-card:active {
+  transform: translateY(-1px) scale(.998);
+}
+
+.lot-card:has(input:checked) {
+  border-color: rgba(73, 58, 255, .72);
+  background:
+    linear-gradient(110deg, rgba(73, 58, 255, .10), rgba(118, 107, 255, .045) 52%, transparent 100%),
+    var(--surface);
+  box-shadow:
+    0 12px 30px rgba(73, 58, 255, .12),
+    inset 0 0 0 1px rgba(73, 58, 255, .05);
+}
+
+.lot-card:has(input:checked)::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.lot-card:has(input:checked)::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.lot-card input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 2px 7px rgba(8, 0, 101, .05);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    transform .20s cubic-bezier(.2, .8, .2, 1),
+    border-color .20s ease,
+    background .20s ease,
+    box-shadow .20s ease;
+}
+
+.lot-card input[type="checkbox"]::after {
+  content: "";
+  width: 6px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(.55);
+  opacity: 0;
+  margin-top: -2px;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+.lot-card input[type="checkbox"]:checked {
+  border-color: var(--brand-500);
+  background: linear-gradient(135deg, var(--brand-400), var(--brand-500));
+  box-shadow: 0 7px 16px rgba(73, 58, 255, .27);
+  transform: scale(1.06);
+}
+
+.lot-card input[type="checkbox"]:checked::after {
+  opacity: 1;
+  transform: rotate(45deg) scale(1);
+}
+
+.lot-card input[type="checkbox"]:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px var(--focus);
+}
+
+.lot-main {
+  min-width: 0;
+  gap: 6px;
+}
+
+.lot-main strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  font-size: 14px;
+  letter-spacing: -.01em;
+  color: var(--text);
+}
+
+.lot-main strong::after {
+  content: "REUTILIZABLE";
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(73, 58, 255, .08);
+  color: var(--brand-500);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .06em;
+}
+
+.lot-main span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.lot-main span::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 4px var(--success-soft);
+}
+
+.lot-count {
+  min-width: 102px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  text-align: right;
+  box-shadow: 0 5px 14px rgba(8, 0, 101, .045);
+  transition: transform .24s cubic-bezier(.2, .8, .2, 1), border-color .24s ease;
+}
+
+.lot-card:hover .lot-count,
+.lot-card:has(input:checked) .lot-count {
+  transform: translateX(-2px);
+  border-color: rgba(73, 58, 255, .16);
+}
+
+.lot-count strong {
+  display: block;
+  font-size: 17px;
+  line-height: 1.15;
+  letter-spacing: -.025em;
+  color: var(--text);
+}
+
+.lot-count span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-soft);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-weight: 750;
+}
+
+.lot-card:has(input:checked) .lot-count strong {
+  color: var(--brand-500);
+}
+
+.generate-bar {
+  position: relative;
+}
+
+.generate-summary {
+  gap: 6px;
+}
+
+.generate-summary strong {
+  transition: color .2s ease, transform .2s ease;
+}
+
+#generateButton:not(:disabled) {
+  position: relative;
+  overflow: hidden;
+  animation: readyPulse 2.8s ease-in-out infinite;
+}
+
+#generateButton:not(:disabled)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,.22) 45%, transparent 68%);
+  transform: translateX(-130%);
+  animation: buttonShine 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+html[data-theme="dark"] .lot-card {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.025), rgba(255,255,255,0)),
+    var(--surface-soft);
+}
+
+html[data-theme="dark"] .lot-card:hover {
+  border-color: rgba(118, 107, 255, .42);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .24);
+}
+
+html[data-theme="dark"] .lot-card:has(input:checked) {
+  border-color: var(--brand-400);
+  background:
+    linear-gradient(110deg, rgba(118, 107, 255, .18), rgba(73, 58, 255, .08) 55%, transparent 100%),
+    var(--surface-raised);
+}
+
+html[data-theme="dark"] .lot-main strong::after {
+  background: rgba(118, 107, 255, .18);
+  color: #dcd9ff;
+}
+
+@keyframes lotEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes readyPulse {
+  0%, 100% { box-shadow: 0 9px 24px rgba(73,58,255,.22); }
+  50% { box-shadow: 0 11px 30px rgba(73,58,255,.34); }
+}
+
+@keyframes buttonShine {
+  0%, 58% { transform: translateX(-130%); }
+  78%, 100% { transform: translateX(130%); }
+}
+
+@media (max-width: 760px) {
+  .lot-card {
+    grid-template-columns: 24px minmax(0, 1fr);
+    padding: 15px;
+  }
+
+  .lot-count {
+    grid-column: 2;
+    min-width: 0;
+    width: fit-content;
+    text-align: left;
+  }
+
+  .lot-card:hover .lot-count,
+  .lot-card:has(input:checked) .lot-count {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lot-card,
+  #generateButton:not(:disabled),
+  #generateButton:not(:disabled)::after {
+    animation: none !important;
+  }
+
+  .lot-card {
+    opacity: 1;
+    transform: none;
+  }
+}

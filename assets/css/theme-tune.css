@@ -1,0 +1,71 @@
+/* Ajustes de marca y luminosidad de temas */
+:root {
+  --bg: #fbfbff;
+  --surface: #ffffff;
+  --surface-soft: #f6f5ff;
+  --surface-raised: #ffffff;
+  --sidebar: #ffffff;
+  --input: #ffffff;
+  --border: #e8e6f5;
+  --border-strong: #dcd8ef;
+}
+
+html[data-theme="dark"] {
+  --bg: #171075;
+  --surface: #241c8a;
+  --surface-soft: #30279b;
+  --surface-raised: #2a2193;
+  --sidebar: #120b68;
+  --input: #1d167d;
+  --border: rgba(226, 224, 255, .18);
+  --border-strong: rgba(226, 224, 255, .28);
+  --text: #fafaff;
+  --text-soft: #d9d5ff;
+}
+
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 88% 8%, rgba(118, 107, 255, .14), transparent 26%),
+    radial-gradient(circle at 18% 86%, rgba(118, 107, 255, .09), transparent 30%),
+    var(--bg);
+}
+
+html[data-theme="dark"] .hero-card {
+  background: linear-gradient(130deg, #3025aa 0%, #1b147f 64%, #140d6d 100%);
+}
+
+/* Marca lateral: TOGA en mayúsculas, sin subtítulo anterior */
+.brand-copy strong {
+  font-size: 0;
+  letter-spacing: .08em;
+}
+
+.brand-copy strong::after {
+  content: "TOGA";
+  font-size: 16px;
+  font-weight: 820;
+  letter-spacing: .08em;
+}
+
+.brand-copy small {
+  display: none;
+}
+
+/* Icono del módulo Generar corte: tijera */
+.nav-item[data-view="generator"] .nav-icon {
+  font-size: 0;
+  transform: rotate(-8deg);
+  transform-origin: center;
+  transition: transform .24s cubic-bezier(.2,.8,.2,1);
+}
+
+.nav-item[data-view="generator"] .nav-icon::before {
+  content: "✂";
+  font-size: 18px;
+  line-height: 1;
+}
+
+.nav-item[data-view="generator"]:hover .nav-icon,
+.nav-item[data-view="generator"].is-active .nav-icon {
+  transform: rotate(-14deg) scale(1.08);
+}
