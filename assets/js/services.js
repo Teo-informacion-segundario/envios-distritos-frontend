@@ -28,6 +28,7 @@
     standardFields: document.querySelector('#standardRequestFields'),
     serviceFields: document.querySelector('#serviceFields'),
     serviceCode: document.querySelector('#serviceCode'),
+    serviceCodePlaceholder: document.querySelector('#serviceCodePlaceholder'),
     serviceDistrict1: document.querySelector('#serviceDistrict1'),
     serviceDistrict2: document.querySelector('#serviceDistrict2'),
     serviceQuantity1: document.querySelector('#serviceQuantity1'),
@@ -69,6 +70,50 @@
   let serviceAvailability = null;
   let serviceRequestId = null;
   let serviceBusy = false;
+  let servicePlaceholderTimer = null;
+  let servicePlaceholderIndex = 0;
+
+  const SERVICE_CODE_EXAMPLES = [
+    '0-40-340-4161-102026-2012',
+    '2-105-67-3829-112026-101',
+    '0-34-209-3769-102026-1888'
+  ];
+
+  function syncServicePlaceholderVisibility() {
+    if (!els.serviceCodePlaceholder || !els.serviceCode) return;
+    const hasValue = Boolean(els.serviceCode.value.trim());
+    els.serviceCodePlaceholder.classList.toggle('is-hidden-placeholder', hasValue);
+  }
+
+  function rotateServiceCodePlaceholder() {
+    if (!els.serviceCodePlaceholder || !isServices()) return;
+
+    els.serviceCodePlaceholder.classList.add('is-leaving');
+
+    window.setTimeout(() => {
+      servicePlaceholderIndex = (servicePlaceholderIndex + 1) % SERVICE_CODE_EXAMPLES.length;
+      els.serviceCodePlaceholder.textContent = SERVICE_CODE_EXAMPLES[servicePlaceholderIndex];
+      els.serviceCodePlaceholder.classList.remove('is-leaving');
+      els.serviceCodePlaceholder.classList.add('is-entering');
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          els.serviceCodePlaceholder.classList.remove('is-entering');
+        });
+      });
+    }, 220);
+  }
+
+  function startServicePlaceholderRotation() {
+    if (servicePlaceholderTimer) return;
+    servicePlaceholderTimer = window.setInterval(rotateServiceCodePlaceholder, 1000);
+  }
+
+  function stopServicePlaceholderRotation() {
+    if (!servicePlaceholderTimer) return;
+    window.clearInterval(servicePlaceholderTimer);
+    servicePlaceholderTimer = null;
+  }
 
   function isServices() {
     return document.querySelector('input[name="canal"]:checked')?.value === 'SERVICIOS';
@@ -270,6 +315,10 @@
   function setServiceControlsLocked(locked) {
     serviceBusy = locked;
 
+    els.serviceCode?.addEventListener('input', syncServicePlaceholderVisibility);
+    els.serviceCode?.addEventListener('focus', syncServicePlaceholderVisibility);
+    els.serviceCode?.addEventListener('blur', syncServicePlaceholderVisibility);
+
     [
       els.serviceCode,
       els.serviceDistrict1,
@@ -309,10 +358,13 @@
       clearServiceAvailability();
       updateSecondDistrictState();
       updateServiceSummary();
+      syncServicePlaceholderVisibility();
+      startServicePlaceholderRotation();
       setStep(1);
     } else {
       els.periodo.disabled = false;
       els.serviceReusePanel.classList.add('is-hidden');
+      stopServicePlaceholderRotation();
       restoreMetricLabels();
     }
   }
@@ -478,6 +530,9 @@
         distritos: request.distritos
       });
 
+      // La consulta terminó. Los campos siguen bloqueados, pero el botón
+      // Generar debe poder habilitarse según disponibilidad/reutilización.
+      serviceBusy = false;
       renderServiceAvailability(result);
     } catch (error) {
       setServiceControlsLocked(false);
@@ -519,6 +574,7 @@
     serviceAvailability = null;
     serviceRequestId = null;
     els.serviceCode.value = '';
+    syncServicePlaceholderVisibility();
     els.serviceQuantity1.value = '';
     els.serviceDistrict2.value = '';
     els.serviceQuantity2.value = '';
@@ -579,6 +635,7 @@
     serviceBusy = false;
 
     els.serviceCode.value = '';
+    syncServicePlaceholderVisibility();
     els.serviceQuantity1.value = '';
     els.serviceDistrict2.value = '';
     els.serviceQuantity2.value = '';

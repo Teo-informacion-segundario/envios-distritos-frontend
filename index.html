@@ -181,8 +181,11 @@
               <div class="field-grid field-grid--2">
                 <label class="field">
                   <span>Código de servicio</span>
-                  <input id="serviceCode" autocomplete="off" placeholder="Ej. SERVICIO_CLIENTE_001" />
-                  <small>Debe ser único dentro del periodo operativo.</small>
+                  <div class="service-code-input-wrap">
+                    <input id="serviceCode" autocomplete="off" aria-describedby="serviceCodeHint" />
+                    <span class="service-code-placeholder" id="serviceCodePlaceholder" aria-hidden="true">0-40-340-4161-102026-2012</span>
+                  </div>
+                  <small id="serviceCodeHint">Debe ser único dentro del periodo operativo.</small>
                 </label>
 
                 <div class="field">

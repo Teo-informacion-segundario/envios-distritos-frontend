@@ -212,3 +212,58 @@ html[data-theme="dark"] .service-district-card {
     text-align: left;
   }
 }
+
+
+.service-code-input-wrap {
+  position: relative;
+}
+
+.service-code-input-wrap input {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+}
+
+.service-code-placeholder {
+  position: absolute;
+  z-index: 1;
+  left: 14px;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  pointer-events: none;
+  opacity: .72;
+  transition:
+    transform .22s ease,
+    opacity .22s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.service-code-placeholder.is-leaving {
+  transform: translateY(-135%);
+  opacity: 0;
+}
+
+.service-code-placeholder.is-entering {
+  transform: translateY(35%);
+  opacity: 0;
+}
+
+.service-code-placeholder.is-hidden-placeholder {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.service-code-input-wrap:focus-within .service-code-placeholder {
+  opacity: .55;
+}
+
+.service-code-input-wrap:focus-within .service-code-placeholder.is-hidden-placeholder {
+  opacity: 0;
+}
