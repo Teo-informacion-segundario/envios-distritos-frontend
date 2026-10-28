@@ -370,3 +370,16 @@ html[data-theme="dark"] .history-calendar__footer {
   box-shadow:
     0 -12px 28px rgba(5, 2, 48, .24);
 }
+
+
+/* FIX CALENDARIO · no recortar acciones con historial vacío */
+html[data-theme="dark"] .history-calendar__footer {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(31, 23, 116, .97),
+      rgba(24, 17, 99, .99)
+    );
+  box-shadow:
+    0 -12px 28px rgba(5, 2, 48, .24);
+}
