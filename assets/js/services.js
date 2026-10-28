@@ -481,17 +481,32 @@
     try {
       data = text ? JSON.parse(text) : {};
     } catch (_) {
-      throw new Error(context + ': el servidor devolvió una respuesta no JSON.');
+      const error = new Error(context + ': el servidor devolvió una respuesta no JSON.');
+      error.status = response.status;
+      error.payload = {};
+      throw error;
     }
 
     if (!response.ok || data?.ok === false) {
-      let detail = data?.message || data?.error || data?.detail || (response.status + ' ' + response.statusText);
+      let detail =
+        data?.message ??
+        data?.error ??
+        data?.detail ??
+        (response.status + ' ' + response.statusText);
 
       if (detail && typeof detail === 'object') {
-        detail = detail.message || detail.status || JSON.stringify(detail);
+        detail =
+          detail.message ??
+          detail.detail ??
+          detail.error ??
+          detail.status ??
+          JSON.stringify(detail);
       }
 
-      throw new Error(context + ': ' + detail);
+      const error = new Error(String(detail || 'No se pudo procesar la solicitud.'));
+      error.status = response.status;
+      error.payload = data;
+      throw error;
     }
 
     return data;
@@ -654,31 +669,29 @@
       let message = error?.message || 'No se pudo consultar SERVICIOS.';
       let title = 'No se pudo validar';
 
-      if (/Error in workflow/i.test(message)) {
-        const code = els.serviceCode.value.trim();
-        const knownPeriod = findKnownCompletedPeriod(code);
+      const duplicateCode =
+        error?.status === 409 &&
+        /c[oó]digo de servicio/i.test(message) &&
+        /ya existe en el periodo/i.test(message);
 
-        if (code && knownPeriod) {
-          message =
-            'El código de servicio ' +
-            code +
-            ' ya existe en el periodo ' +
-            knownPeriod +
-            '. Ingresa un código diferente.';
-          title = 'Código de servicio duplicado';
-          clearServiceCode();
-        } else {
-          message =
-            'El flujo rechazó la solicitud antes de completar la validación. ' +
-            'Revisa el código y los datos ingresados e inténtalo nuevamente.';
-          title = 'Solicitud rechazada';
-        }
+      if (duplicateCode) {
+        title = 'Código de servicio duplicado';
+        clearServiceCode();
+      } else if (/Error in workflow/i.test(message)) {
+        message =
+          'El flujo rechazó la solicitud antes de completar la validación. ' +
+          'Revisa el código y los datos ingresados e inténtalo nuevamente.';
+        title = 'Solicitud rechazada';
+      } else if (error?.status === 409) {
+        title = 'Solicitud no disponible';
+      } else if (error?.status === 422) {
+        title = 'Revisa los datos ingresados';
       }
 
       notify(message, {
         type: 'error',
         title,
-        duration: 5800
+        duration: duplicateCode ? 6200 : 5800
       });
     }
   }
@@ -788,7 +801,7 @@
 
       const duplicateExplicit =
         /c[oó]digo de servicio/i.test(message) &&
-        /ya existe/i.test(message);
+        /ya existe en el periodo/i.test(message);
 
       if (duplicateExplicit) {
         clearServiceCode();
