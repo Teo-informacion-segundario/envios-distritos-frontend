@@ -2,7 +2,9 @@ FROM nginx:1.27-alpine
 
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY deploy/security-headers.inc /etc/nginx/conf.d/security-headers.inc
-COPY . /usr/share/nginx/html
+COPY index.html /usr/share/nginx/html/index.html
+COPY 50x.html /usr/share/nginx/html/50x.html
+COPY assets /usr/share/nginx/html/assets
 
 EXPOSE 80
 
