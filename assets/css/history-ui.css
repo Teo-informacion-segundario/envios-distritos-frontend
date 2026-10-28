@@ -708,3 +708,52 @@ html[data-theme="dark"] .history-table th {
     transition: none !important;
   }
 }
+
+
+/* =========================================================
+   FIX CALENDARIO · stacking y posicionamiento
+   ========================================================= */
+
+.history-search-row {
+  position: relative;
+  z-index: 120;
+}
+
+.history-search {
+  position: relative;
+  z-index: 130;
+  overflow: visible;
+}
+
+.history-calendar {
+  z-index: 9999;
+  top: calc(100% + 14px);
+  right: 0;
+  left: auto;
+  min-width: 324px;
+  isolation: isolate;
+}
+
+.history-type-filter {
+  position: relative;
+  z-index: 10;
+}
+
+.history-table-shell {
+  position: relative;
+  z-index: 1;
+}
+
+.history-pagination {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 760px) {
+  .history-calendar {
+    left: 0;
+    right: auto;
+    min-width: 0;
+    width: min(324px, calc(100vw - 32px));
+  }
+}
