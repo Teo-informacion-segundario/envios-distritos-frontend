@@ -251,3 +251,23 @@ html[data-theme="dark"] .history-error strong {
     transition: none !important;
   }
 }
+
+
+html[data-theme="dark"] .history-channel--services {
+  border-color: rgba(210,205,255,.68);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #e5e1ff 100%);
+  color: #2a219f;
+  box-shadow:
+    0 9px 20px rgba(5,2,48,.22),
+    inset 0 1px 0 rgba(255,255,255,1),
+    inset 0 -1px 0 rgba(73,58,255,.12);
+}
+
+html[data-theme="dark"] .history-service-code {
+  color: rgba(244,242,255,.72);
+}
+
+html[data-theme="dark"] .history-table tbody tr:hover .history-service-code {
+  color: #fff;
+}

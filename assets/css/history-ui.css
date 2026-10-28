@@ -418,3 +418,53 @@ html[data-theme="dark"] .history-table th {
     animation: none !important;
   }
 }
+
+
+/* =========================================================
+   Historial · filas SERVICIOS
+   ========================================================= */
+
+.history-type-cell {
+  display: grid;
+  justify-items: start;
+  gap: 7px;
+  min-width: 0;
+}
+
+.history-channel--services {
+  border-color: color-mix(in srgb, var(--brand-500) 34%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--brand-100) 86%, var(--surface)),
+      color-mix(in srgb, var(--brand-50) 76%, var(--surface))
+    );
+  color: var(--brand-700);
+  box-shadow:
+    0 7px 18px rgba(73,58,255,.08),
+    inset 0 1px 0 rgba(255,255,255,.72);
+}
+
+.history-service-code {
+  display: inline-block;
+  max-width: 250px;
+  padding-left: 2px;
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 1.25;
+  letter-spacing: .015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-table tbody tr:hover .history-service-code {
+  color: var(--text);
+}
+
+@media (max-width: 760px) {
+  .history-service-code {
+    max-width: 210px;
+  }
+}

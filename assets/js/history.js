@@ -38,7 +38,29 @@
     const channel = String(value || '').toUpperCase();
     if (channel === 'EMAIL') return 'history-channel--email';
     if (channel === 'WHATSAPP') return 'history-channel--whatsapp';
+    if (channel === 'SERVICIOS') return 'history-channel--services';
     return 'history-channel--other';
+  }
+
+  function serviceTypeLabel(value) {
+    const type = String(value || '').toUpperCase();
+
+    if (type === 'EMAIL_Y_WHATSAPP') {
+      return 'EMAIL + WHATSAPP';
+    }
+
+    if (type === 'EMAIL') return 'EMAIL';
+    if (type === 'WHATSAPP') return 'WHATSAPP';
+
+    return type || '—';
+  }
+
+  function historyTypeLabel(row) {
+    if (row.origen === 'SERVICIOS' || row.tipo === 'SERVICIOS') {
+      return 'SERVICIOS · ' + serviceTypeLabel(row.tipoServicio);
+    }
+
+    return row.tipo || '—';
   }
 
   function parseDate(value) {
@@ -120,7 +142,7 @@
           <div class="history-title-wrap">
             <span class="section-number">HISTORIAL</span>
             <h2>Cortes realizados</h2>
-            <p>Consulta los cortes confirmados registrados por el sistema.</p>
+            <p>Consulta los cortes confirmados de envíos y servicios registrados por el sistema.</p>
           </div>
           <div class="history-count" aria-label="Cantidad de cortes">
             <span class="history-count__glow" aria-hidden="true"></span>
@@ -208,7 +230,10 @@
         cantidad: Number(row.generados ?? row.cantidad ?? row.solicitados ?? row.total ?? 0),
         tipo: String(row.canal || row.tipo || '').toUpperCase(),
         distrito: row.distrito_nombre || row.distrito || '—',
-        status: String(row.status || row.estado || 'COMPLETED').toUpperCase()
+        status: String(row.status || row.estado || 'COMPLETED').toUpperCase(),
+        origen: String(row.origen || '').toUpperCase(),
+        codigoServicio: row.codigo_servicio || row.codigoServicio || '',
+        tipoServicio: String(row.tipo_servicio || row.tipoServicio || '').toUpperCase()
       }))
       .filter(row => !row.status || row.status === 'COMPLETED')
       .sort((a, b) => {
@@ -303,10 +328,17 @@
                 <td>${escapeHtml(formatDate(row.fecha))}</td>
                 <td><strong>${number(row.cantidad)}</strong></td>
                 <td>
-                  <span class="history-channel ${channelClass(row.tipo)}">
-                    <span class="history-channel__dot" aria-hidden="true"></span>
-                    ${escapeHtml(row.tipo || '—')}
-                  </span>
+                  <div class="history-type-cell">
+                    <span class="history-channel ${channelClass(row.tipo)}">
+                      <span class="history-channel__dot" aria-hidden="true"></span>
+                      ${escapeHtml(historyTypeLabel(row))}
+                    </span>
+                    ${row.codigoServicio ? `
+                      <span class="history-service-code" title="${escapeHtml(row.codigoServicio)}">
+                        ${escapeHtml(row.codigoServicio)}
+                      </span>
+                    ` : ''}
+                  </div>
                 </td>
                 <td>${escapeHtml(row.distrito)}</td>
               </tr>
