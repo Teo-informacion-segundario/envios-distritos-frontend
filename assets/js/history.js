@@ -18,6 +18,8 @@
   let total = 0;
   let pages = 1;
   let activeDate = '';
+  let activeType = 'TODOS';
+  let calendarCursor = new Date();
   let lastRequestKey = '';
   let searchTimer = null;
 
@@ -130,6 +132,97 @@
     return `${match[3]}/${match[2]}/${match[1]}`;
   }
 
+  function typeMatches(row, type = activeType) {
+    if (type === 'TODOS') return true;
+    if (type === 'SERVICIOS') return row.origen === 'SERVICIOS' || row.tipo === 'SERVICIOS';
+    return row.origen !== 'SERVICIOS' && row.tipo === type;
+  }
+
+  function dateToIso(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function isSameDay(a, b) {
+    return a &&
+      b &&
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate();
+  }
+
+  function renderCalendar() {
+    const year = calendarCursor.getFullYear();
+    const month = calendarCursor.getMonth();
+    const monthDate = new Date(year, month, 1);
+
+    calendarTitle.textContent = new Intl.DateTimeFormat('es-PE', {
+      month: 'long',
+      year: 'numeric'
+    }).format(monthDate);
+
+    const firstDay = new Date(year, month, 1);
+    const startOffset = (firstDay.getDay() + 6) % 7;
+    const gridStart = new Date(year, month, 1 - startOffset);
+    const selected = activeDate ? new Date(activeDate + 'T12:00:00') : null;
+    const today = new Date();
+
+    const cells = [];
+
+    for (let i = 0; i < 42; i += 1) {
+      const current = new Date(gridStart);
+      current.setDate(gridStart.getDate() + i);
+
+      const outside = current.getMonth() !== month;
+      const selectedDay = selected && isSameDay(current, selected);
+      const todayDay = isSameDay(current, today);
+
+      cells.push(`
+        <button
+          type="button"
+          class="history-calendar__day${outside ? ' is-outside' : ''}${selectedDay ? ' is-selected' : ''}${todayDay ? ' is-today' : ''}"
+          data-date="${dateToIso(current)}"
+          aria-label="${escapeHtml(new Intl.DateTimeFormat('es-PE', { dateStyle: 'full' }).format(current))}"
+          ${selectedDay ? 'aria-current="date"' : ''}
+        >${current.getDate()}</button>
+      `);
+    }
+
+    calendarDays.innerHTML = cells.join('');
+  }
+
+  function openCalendar() {
+    if (activeDate) {
+      const selected = new Date(activeDate + 'T12:00:00');
+      if (!Number.isNaN(selected.getTime())) {
+        calendarCursor = new Date(selected.getFullYear(), selected.getMonth(), 1);
+      }
+    }
+
+    renderCalendar();
+    calendar.hidden = false;
+    dateButton.setAttribute('aria-expanded', 'true');
+    window.requestAnimationFrame(() => calendar.classList.add('is-open'));
+  }
+
+  function closeCalendar() {
+    calendar.classList.remove('is-open');
+    dateButton.setAttribute('aria-expanded', 'false');
+    window.setTimeout(() => {
+      if (!calendar.classList.contains('is-open')) calendar.hidden = true;
+    }, 180);
+  }
+
+  function toggleCalendar() {
+    if (calendar.hidden) {
+      openCalendar();
+    } else {
+      closeCalendar();
+    }
+  }
+
   function createView() {
     const section = document.createElement('section');
     section.className = 'history-view';
@@ -169,17 +262,39 @@
                 placeholder="Buscar por fecha: 10/09/2026"
                 aria-label="Buscar cortes por fecha"
               />
-              <button class="history-filter-button" id="historyDateButton" type="button" aria-label="Seleccionar fecha">
+              <button class="history-filter-button" id="historyDateButton" type="button" aria-label="Abrir calendario" aria-expanded="false">
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M4 5h16l-6.4 7.2v5.3l-3.2 1.7v-7L4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                  <path d="M7 3v3M17 3v3M4.5 9h15M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
                 </svg>
               </button>
-              <input class="history-date-native" id="historyDateNative" type="date" tabindex="-1" aria-hidden="true" />
+
+              <div class="history-calendar" id="historyCalendar" hidden>
+                <div class="history-calendar__head">
+                  <button class="history-calendar__nav" id="historyCalendarPrev" type="button" aria-label="Mes anterior">←</button>
+                  <strong id="historyCalendarTitle"></strong>
+                  <button class="history-calendar__nav" id="historyCalendarNext" type="button" aria-label="Mes siguiente">→</button>
+                </div>
+                <div class="history-calendar__weekdays" aria-hidden="true">
+                  <span>LU</span><span>MA</span><span>MI</span><span>JU</span><span>VI</span><span>SÁ</span><span>DO</span>
+                </div>
+                <div class="history-calendar__days" id="historyCalendarDays"></div>
+                <div class="history-calendar__footer">
+                  <button type="button" id="historyCalendarClear">Limpiar</button>
+                  <button type="button" id="historyCalendarToday">Hoy</button>
+                </div>
+              </div>
             </div>
-            <div class="history-search-help" id="historySearchHelp">Escribe una fecha completa o usa el selector.</div>
+            <div class="history-search-help" id="historySearchHelp">Escribe una fecha completa o usa el calendario.</div>
           </div>
 
           <button class="history-refresh" id="historyRefresh" type="button">Actualizar historial</button>
+        </div>
+
+        <div class="history-type-filter" id="historyTypeFilter" role="group" aria-label="Filtrar por tipo de corte">
+          <button type="button" class="history-type-filter__button is-active" data-history-type="TODOS">Todos</button>
+          <button type="button" class="history-type-filter__button" data-history-type="EMAIL">EMAIL</button>
+          <button type="button" class="history-type-filter__button" data-history-type="WHATSAPP">WHATSAPP</button>
+          <button type="button" class="history-type-filter__button" data-history-type="SERVICIOS">SERVICIOS</button>
         </div>
 
         <div class="history-table-shell" id="historyTableShell">
@@ -205,8 +320,15 @@
   const searchInput = view.querySelector('#historySearch');
   const searchBox = view.querySelector('#historySearchBox');
   const searchHelp = view.querySelector('#historySearchHelp');
-  const dateInput = view.querySelector('#historyDateNative');
   const dateButton = view.querySelector('#historyDateButton');
+  const calendar = view.querySelector('#historyCalendar');
+  const calendarTitle = view.querySelector('#historyCalendarTitle');
+  const calendarDays = view.querySelector('#historyCalendarDays');
+  const calendarPrev = view.querySelector('#historyCalendarPrev');
+  const calendarNext = view.querySelector('#historyCalendarNext');
+  const calendarClear = view.querySelector('#historyCalendarClear');
+  const calendarToday = view.querySelector('#historyCalendarToday');
+  const typeFilter = view.querySelector('#historyTypeFilter');
   const refreshButton = view.querySelector('#historyRefresh');
   const tableShell = view.querySelector('#historyTableShell');
   const countEl = view.querySelector('#historyCount');
@@ -349,15 +471,15 @@
     `;
   }
 
-  async function requestHistory() {
+  async function requestHistoryPage(requestPage, requestLimit) {
     if (!CONFIG.gatewayWebhook) {
       throw new Error('No está configurado el gateway de n8n.');
     }
 
     const payload = {
       accion: 'historial',
-      page,
-      limit: PAGE_SIZE
+      page: requestPage,
+      limit: requestLimit
     };
 
     if (activeDate) payload.fecha = activeDate;
@@ -385,8 +507,44 @@
     return data;
   }
 
+  async function requestHistory() {
+    if (activeType === 'TODOS') {
+      return requestHistoryPage(page, PAGE_SIZE);
+    }
+
+    const serverLimit = 100;
+    const first = await requestHistoryPage(1, serverLimit);
+    const serverPages = Math.max(1, Number(first?.pages || 1));
+    const payloads = [first];
+
+    if (serverPages > 1) {
+      const requests = [];
+
+      for (let current = 2; current <= serverPages; current += 1) {
+        requests.push(requestHistoryPage(current, serverLimit));
+      }
+
+      payloads.push(...await Promise.all(requests));
+    }
+
+    const allRows = payloads.flatMap(payload => normalizeRows(payload));
+    const filtered = allRows.filter(row => typeMatches(row));
+
+    total = filtered.length;
+    pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+    if (page > pages) page = pages;
+
+    const start = (page - 1) * PAGE_SIZE;
+    rows = filtered.slice(start, start + PAGE_SIZE);
+
+    return {
+      __filteredLocally: true
+    };
+  }
+
   async function loadHistory({ force = false } = {}) {
-    const requestKey = `${page}|${PAGE_SIZE}|${activeDate}`;
+    const requestKey = `${page}|${PAGE_SIZE}|${activeDate}|${activeType}`;
     if (loading || (!force && requestKey === lastRequestKey)) return;
 
     loading = true;
@@ -398,8 +556,10 @@
 
     try {
       const data = await requestHistory();
-      applyPayload(data);
-      lastRequestKey = `${page}|${PAGE_SIZE}|${activeDate}`;
+      if (!data?.__filteredLocally) {
+        applyPayload(data);
+      }
+      lastRequestKey = `${page}|${PAGE_SIZE}|${activeDate}|${activeType}`;
       render();
     } catch (error) {
       pagination.hidden = true;
@@ -441,7 +601,10 @@
 
     setSearchState();
     activeDate = parsed;
-    dateInput.value = parsed || '';
+    if (parsed) {
+      const selected = new Date(parsed + 'T12:00:00');
+      calendarCursor = new Date(selected.getFullYear(), selected.getMonth(), 1);
+    }
     page = 1;
     lastRequestKey = '';
 
@@ -473,6 +636,10 @@
   historyNav.removeAttribute('disabled');
   historyNav.querySelector('.nav-badge')?.remove();
 
+  typeFilter.querySelectorAll('[data-history-type]').forEach(item => {
+    item.setAttribute('aria-pressed', item.dataset.historyType === activeType ? 'true' : 'false');
+  });
+
   historyNav.addEventListener('click', openHistory);
   generatorNav.addEventListener('click', openGenerator);
   refreshButton.addEventListener('click', () => loadHistory({ force: true }));
@@ -500,21 +667,92 @@
     if (value && !searchDateToIso(value)) applySearchValue(value);
   });
 
-  dateButton.addEventListener('click', () => {
-    if (typeof dateInput.showPicker === 'function') {
-      dateInput.showPicker();
-    } else {
-      dateInput.focus();
-      dateInput.click();
-    }
+  dateButton.addEventListener('click', event => {
+    event.stopPropagation();
+    toggleCalendar();
   });
 
-  dateInput.addEventListener('change', () => {
-    activeDate = dateInput.value || '';
+  calendar.addEventListener('click', event => {
+    event.stopPropagation();
+
+    const dayButton = event.target.closest('[data-date]');
+    if (!dayButton) return;
+
+    activeDate = dayButton.dataset.date || '';
     searchInput.value = isoToDisplay(activeDate);
     setSearchState();
     page = 1;
     lastRequestKey = '';
+    closeCalendar();
+    loadHistory({ force: true });
+  });
+
+  calendarPrev.addEventListener('click', event => {
+    event.stopPropagation();
+    calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1);
+    renderCalendar();
+  });
+
+  calendarNext.addEventListener('click', event => {
+    event.stopPropagation();
+    calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
+    renderCalendar();
+  });
+
+  calendarClear.addEventListener('click', event => {
+    event.stopPropagation();
+    activeDate = '';
+    searchInput.value = '';
+    setSearchState();
+    page = 1;
+    lastRequestKey = '';
+    closeCalendar();
+    loadHistory({ force: true });
+  });
+
+  calendarToday.addEventListener('click', event => {
+    event.stopPropagation();
+    const today = new Date();
+    activeDate = dateToIso(today);
+    searchInput.value = isoToDisplay(activeDate);
+    calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);
+    setSearchState();
+    page = 1;
+    lastRequestKey = '';
+    closeCalendar();
+    loadHistory({ force: true });
+  });
+
+  document.addEventListener('click', event => {
+    if (!calendar.hidden && !calendar.contains(event.target) && !dateButton.contains(event.target)) {
+      closeCalendar();
+    }
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !calendar.hidden) {
+      closeCalendar();
+      dateButton.focus({ preventScroll: true });
+    }
+  });
+
+  typeFilter.addEventListener('click', event => {
+    const button = event.target.closest('[data-history-type]');
+    if (!button) return;
+
+    const nextType = button.dataset.historyType || 'TODOS';
+    if (nextType === activeType) return;
+
+    activeType = nextType;
+    page = 1;
+    lastRequestKey = '';
+
+    typeFilter.querySelectorAll('[data-history-type]').forEach(item => {
+      const active = item.dataset.historyType === activeType;
+      item.classList.toggle('is-active', active);
+      item.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+
     loadHistory({ force: true });
   });
 
