@@ -1,6 +1,7 @@
 FROM nginx:1.27-alpine
 
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY deploy/security-headers.inc /etc/nginx/conf.d/security-headers.inc
 COPY . /usr/share/nginx/html
 
 EXPOSE 80
