@@ -154,6 +154,17 @@
     return current.includes(code);
   }
 
+  function findKnownCompletedPeriod(code) {
+    if (!code) return null;
+    const registry = readCompletedCodes();
+
+    for (const [period, codes] of Object.entries(registry)) {
+      if (Array.isArray(codes) && codes.includes(code)) return period;
+    }
+
+    return null;
+  }
+
   function clearSecondDistrict() {
     els.serviceDistrict2.value = '';
     els.serviceQuantity2.value = '';
@@ -209,14 +220,29 @@
       .replaceAll("'", '&#039;');
   }
 
-  function notify(message) {
+  function notify(message, options = {}) {
+    const cleanMessage = String(message || '').replace(/^SERVICIOS:\s*/i, '').trim();
+    const type = options.type || 'error';
+    const title = options.title || 'Revisa la solicitud';
+    const duration = Number(options.duration || 5200);
+
+    if (typeof window.showSystemToast === 'function') {
+      window.showSystemToast({
+        type,
+        title,
+        message: cleanMessage,
+        duration
+      });
+      return;
+    }
+
     if (!els.toast) return;
-    els.toast.textContent = message;
+    els.toast.textContent = cleanMessage;
     els.toast.classList.add('is-visible');
     window.clearTimeout(notify.timer);
     notify.timer = window.setTimeout(() => {
       els.toast.classList.remove('is-visible');
-    }, 3600);
+    }, duration);
   }
 
   function setStep(step) {
@@ -625,7 +651,35 @@
       const label = els.availabilityButton.querySelector('span:first-child');
       if (label) label.textContent = 'Consultar disponibilidad';
 
-      notify(error.message || 'No se pudo consultar SERVICIOS.');
+      let message = error?.message || 'No se pudo consultar SERVICIOS.';
+      let title = 'No se pudo validar';
+
+      if (/Error in workflow/i.test(message)) {
+        const code = els.serviceCode.value.trim();
+        const knownPeriod = findKnownCompletedPeriod(code);
+
+        if (code && knownPeriod) {
+          message =
+            'El código de servicio ' +
+            code +
+            ' ya existe en el periodo ' +
+            knownPeriod +
+            '. Ingresa un código diferente.';
+          title = 'Código de servicio duplicado';
+          clearServiceCode();
+        } else {
+          message =
+            'El flujo rechazó la solicitud antes de completar la validación. ' +
+            'Revisa el código y los datos ingresados e inténtalo nuevamente.';
+          title = 'Solicitud rechazada';
+        }
+      }
+
+      notify(message, {
+        type: 'error',
+        title,
+        duration: 5800
+      });
     }
   }
 
@@ -752,7 +806,13 @@
           '.';
       }
 
-      notify(message);
+      notify(message, {
+        type: 'error',
+        title: /ya existe en el periodo/i.test(message)
+          ? 'Código de servicio duplicado'
+          : 'No se pudo generar',
+        duration: 5800
+      });
       updateServiceGenerateState();
     } finally {
       els.generateButton.textContent = 'Generar corte';
