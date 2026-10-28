@@ -358,3 +358,15 @@ html[data-theme="dark"] .history-calendar__footer button {
 html[data-theme="dark"] .history-calendar__footer button:hover {
   background: rgba(255,255,255,.07);
 }
+
+
+html[data-theme="dark"] .history-calendar__footer {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(31, 23, 116, .97),
+      rgba(24, 17, 99, .99)
+    );
+  box-shadow:
+    0 -12px 28px rgba(5, 2, 48, .24);
+}

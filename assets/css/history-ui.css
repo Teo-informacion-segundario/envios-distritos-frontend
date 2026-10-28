@@ -757,3 +757,60 @@ html[data-theme="dark"] .history-table th {
     width: min(324px, calc(100vw - 32px));
   }
 }
+
+
+/* =========================================================
+   FIX CALENDARIO · no recortar acciones con historial vacío
+   ========================================================= */
+
+.history-view {
+  overflow: visible;
+}
+
+.history-content {
+  overflow: visible;
+}
+
+.history-calendar {
+  max-height: min(470px, calc(100vh - 120px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color:
+    color-mix(in srgb, var(--brand-500) 42%, transparent)
+    transparent;
+}
+
+.history-calendar::-webkit-scrollbar {
+  width: 7px;
+}
+
+.history-calendar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.history-calendar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background:
+    color-mix(in srgb, var(--brand-500) 38%, transparent);
+}
+
+.history-calendar__footer {
+  position: sticky;
+  bottom: -16px;
+  z-index: 2;
+  margin-right: -16px;
+  margin-bottom: -16px;
+  margin-left: -16px;
+  padding: 12px 16px 14px;
+  background:
+    color-mix(in srgb, var(--surface) 96%, var(--brand-50));
+  box-shadow:
+    0 -10px 24px color-mix(in srgb, var(--surface) 76%, transparent);
+}
+
+@media (max-width: 760px) {
+  .history-calendar {
+    max-height: min(430px, calc(100vh - 96px));
+  }
+}
