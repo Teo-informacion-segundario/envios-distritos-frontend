@@ -19,9 +19,9 @@
     ['LA_VICTORIA', 'La Victoria'],
     ['BRENA', 'Breña'],
     ['ATE', 'Ate'],
-    ['LIMA_NORTE', 'Lima Norte · grupo virtual'],
+    ['LIMA_NORTE', 'Lima Norte'],
     ['BELLAVISTA', 'Bellavista'],
-    ['MULTIDISTRITO', 'Multidistrito · grupo virtual']
+    ['MULTIDISTRITO', 'Multidistrito']
   ];
 
   const els = {

@@ -79,6 +79,8 @@
     '0-34-209-3769-102026-1888'
   ];
 
+  const COMPLETED_CODES_STORAGE_KEY = 'envios-servicios-completed-codes-v1';
+
   function syncServicePlaceholderVisibility() {
     if (!els.serviceCodePlaceholder || !els.serviceCode) return;
     const hasValue = Boolean(els.serviceCode.value.trim());
@@ -117,6 +119,73 @@
     if (!servicePlaceholderTimer) return;
     window.clearInterval(servicePlaceholderTimer);
     servicePlaceholderTimer = null;
+  }
+
+  function readCompletedCodes() {
+    try {
+      const raw = window.localStorage.getItem(COMPLETED_CODES_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function rememberCompletedCode(period, code) {
+    if (!period || !code) return;
+
+    const registry = readCompletedCodes();
+    const key = String(period);
+    const current = Array.isArray(registry[key]) ? registry[key] : [];
+
+    if (!current.includes(code)) {
+      current.push(code);
+      registry[key] = current.slice(-250);
+      try {
+        window.localStorage.setItem(COMPLETED_CODES_STORAGE_KEY, JSON.stringify(registry));
+      } catch (_) {}
+    }
+  }
+
+  function isKnownCompletedCode(period, code) {
+    if (!period || !code) return false;
+    const registry = readCompletedCodes();
+    const current = Array.isArray(registry[String(period)]) ? registry[String(period)] : [];
+    return current.includes(code);
+  }
+
+  function clearSecondDistrict() {
+    els.serviceDistrict2.value = '';
+    els.serviceQuantity2.value = '';
+    updateSecondDistrictState();
+    updateServiceSummary();
+  }
+
+  function clearInvalidQuantities() {
+    const invalid = [];
+
+    const q1 = Number(els.serviceQuantity1.value);
+    if (!Number.isInteger(q1) || q1 <= 0) {
+      els.serviceQuantity1.value = '';
+      invalid.push('Distrito 1');
+    }
+
+    if (els.serviceDistrict2.value) {
+      const q2 = Number(els.serviceQuantity2.value);
+      if (!Number.isInteger(q2) || q2 <= 0) {
+        els.serviceQuantity2.value = '';
+        invalid.push('Distrito 2');
+      }
+    }
+
+    if (invalid.length) updateServiceSummary();
+    return invalid;
+  }
+
+  function clearServiceCode() {
+    els.serviceCode.value = '';
+    syncServicePlaceholderVisibility();
+    updateServiceSummary();
   }
 
   function isServices() {
@@ -219,6 +288,7 @@
 
   function validateServiceRequest() {
     const code = els.serviceCode.value.trim();
+
     if (!code) {
       throw new Error('Ingresa el código de servicio.');
     }
@@ -227,16 +297,19 @@
       throw new Error('El código de servicio solo puede usar letras, números, guion y guion bajo.');
     }
 
+    const invalidQuantities = clearInvalidQuantities();
+    if (invalidQuantities.length) {
+      throw new Error(
+        invalidQuantities.length === 2
+          ? 'Las cantidades de Distrito 1 y Distrito 2 deben ser enteros mayores a 0. Se limpiaron ambos campos.'
+          : 'La cantidad de ' + invalidQuantities[0] + ' debe ser un entero mayor a 0. Se limpió el campo.'
+      );
+    }
+
     const requests = districtRequests();
 
     if (requests.length < 1 || requests.length > 2) {
       throw new Error('Selecciona uno o dos distritos.');
-    }
-
-    for (const item of requests) {
-      if (!Number.isInteger(item.cantidad) || item.cantidad <= 0) {
-        throw new Error('Cada cantidad debe ser un entero mayor a 0.');
-      }
     }
 
     if (requests.length === 2) {
@@ -244,14 +317,20 @@
       const second = requests[1].distrito;
 
       if (first === second) {
-        throw new Error('Los dos distritos no pueden ser iguales.');
+        clearSecondDistrict();
+        throw new Error('Los dos distritos no pueden ser iguales. Se limpió Distrito 2 para que selecciones otra opción.');
       }
 
       const firstSources = new Set(physicalSources(first));
       const overlap = physicalSources(second).filter(source => firstSources.has(source));
 
       if (overlap.length > 0) {
-        throw new Error('Los distritos seleccionados comparten fuentes físicas: ' + overlap.join(', ') + '.');
+        clearSecondDistrict();
+        throw new Error(
+          'Los distritos seleccionados comparten fuentes físicas: ' +
+          overlap.join(', ') +
+          '. Se limpió Distrito 2 para que selecciones otra opción.'
+        );
       }
     }
 
@@ -514,15 +593,18 @@
   }
 
   async function queryServiceAvailability() {
-    const request = validateServiceRequest();
-
-    serviceRequestId = null;
-    setServiceControlsLocked(true);
-
-    const label = els.availabilityButton.querySelector('span:first-child');
-    if (label) label.textContent = 'Consultando...';
+    let controlsLocked = false;
 
     try {
+      const request = validateServiceRequest();
+
+      serviceRequestId = null;
+      setServiceControlsLocked(true);
+      controlsLocked = true;
+
+      const label = els.availabilityButton.querySelector('span:first-child');
+      if (label) label.textContent = 'Consultando...';
+
       const result = await callServices({
         accion: 'consultar',
         codigoServicio: request.codigoServicio,
@@ -530,18 +612,20 @@
         distritos: request.distritos
       });
 
-      // La consulta terminó. Los campos siguen bloqueados, pero el botón
-      // Generar debe poder habilitarse según disponibilidad/reutilización.
+      // La consulta terminó. Los campos siguen bloqueados, pero Generar
+      // ya puede habilitarse según disponibilidad/reutilización.
       serviceBusy = false;
       renderServiceAvailability(result);
-    } catch (error) {
-      setServiceControlsLocked(false);
-      notify(error.message || 'No se pudo consultar SERVICIOS.');
-    } finally {
+
       if (label) label.textContent = 'Consultar disponibilidad';
-      if (serviceAvailability) {
-        els.availabilityButton.disabled = true;
-      }
+      els.availabilityButton.disabled = true;
+    } catch (error) {
+      if (controlsLocked) setServiceControlsLocked(false);
+
+      const label = els.availabilityButton.querySelector('span:first-child');
+      if (label) label.textContent = 'Consultar disponibilidad';
+
+      notify(error.message || 'No se pudo consultar SERVICIOS.');
     }
   }
 
@@ -565,6 +649,11 @@
       '<div><span>Nuevos</span><strong>' + number(fresh) + '</strong></div>' +
       '<div><span>Reutilizados</span><strong>' + number(reused) + '</strong></div>' +
       '<div><span>Filas exportadas</span><strong>' + number(exported) + '</strong></div>';
+
+    rememberCompletedCode(
+      result.periodo || serviceAvailability?.periodo,
+      result.codigo_servicio || els.serviceCode.value.trim()
+    );
 
     els.successPanel.classList.remove('is-hidden');
     els.availabilityPanel.classList.add('is-hidden');
@@ -590,8 +679,24 @@
   async function generateService() {
     if (!serviceAvailability) return;
 
+    let request = null;
+
     try {
-      const request = validateServiceRequest();
+      request = validateServiceRequest();
+
+      const period = serviceAvailability?.periodo || null;
+
+      if (isKnownCompletedCode(period, request.codigoServicio)) {
+        const duplicateCode = request.codigoServicio;
+        clearServiceCode();
+        throw new Error(
+          'El código de servicio ' +
+          duplicateCode +
+          ' ya existe en el periodo ' +
+          period +
+          '.'
+        );
+      }
 
       if (!serviceAvailability.puede_completar) {
         throw new Error('La solicitud no puede completarse con la data disponible.');
@@ -622,7 +727,32 @@
       renderServiceSuccess(result);
     } catch (error) {
       serviceBusy = false;
-      notify(error.message || 'No se pudo generar SERVICIOS.');
+
+      let message = String(error?.message || 'No se pudo generar SERVICIOS.');
+      const period = serviceAvailability?.periodo || null;
+      const code = request?.codigoServicio || els.serviceCode.value.trim();
+
+      const duplicateExplicit =
+        /c[oó]digo de servicio/i.test(message) &&
+        /ya existe/i.test(message);
+
+      if (duplicateExplicit) {
+        clearServiceCode();
+      } else if (
+        code &&
+        period &&
+        isKnownCompletedCode(period, code)
+      ) {
+        clearServiceCode();
+        message =
+          'El código de servicio ' +
+          code +
+          ' ya existe en el periodo ' +
+          period +
+          '.';
+      }
+
+      notify(message);
       updateServiceGenerateState();
     } finally {
       els.generateButton.textContent = 'Generar corte';
