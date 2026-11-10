@@ -38,9 +38,9 @@
     '<span class="ln-download-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>',
     '</button>',
     '<div id="lnDownloadMenu" class="ln-download-menu" hidden role="group" aria-label="Opciones de descarga CSV">',
-    '<button type="button" class="ln-download-option" aria-disabled="true" title="Descarga disponible próximamente">Descargar .CSV de Email</button>',
-    '<button type="button" class="ln-download-option" aria-disabled="true" title="Descarga disponible próximamente">Descargar .CSV de WSP Nexo Inmobiliaria</button>',
-    '<button type="button" class="ln-download-option" aria-disabled="true" title="Descarga disponible próximamente">Descargar .CSV de WSP Nexo MKT y Servicios</button>',
+    '<button type="button" class="ln-download-option" data-canal="email">Descargar .CSV de Email</button>',
+    '<button type="button" class="ln-download-option" data-canal="whatsapp_100212">Descargar .CSV de WSP Nexo Inmobiliaria</button>',
+    '<button type="button" class="ln-download-option" data-canal="whatsapp_100327">Descargar .CSV de WSP Nexo MKT y Servicios</button>',
     '</div></div>',
     '<button id="lnRefresh" class="ln-refresh" type="button">Actualizar métricas</button>',
     '</div></div>',
@@ -61,6 +61,7 @@
   const downloadMenu = section.querySelector('#lnDownloadMenu');
   const downloadWrap = section.querySelector('.ln-download-wrap');
   let inFlight = false;
+  let downloadInProgress = false;
   let lastPayload = null;
   let filterFrom = '202507';
   let filterTo = null;
@@ -284,10 +285,89 @@
     downloadToggle.setAttribute('aria-expanded', String(open));
   });
 
-  downloadMenu.querySelectorAll('.ln-download-option').forEach(button => {
+  const exportButtons = [...downloadMenu.querySelectorAll('.ln-download-option')];
+
+  async function exportFilteredCsv(canal) {
+    if (downloadInProgress) return;
+    if (!lastPayload || !lastMaximum) {
+      setState('Las métricas aún no se han cargado.', 'error');
+      return;
+    }
+    if (!channels.some(channel => channel.id === canal) ||
+        !validPeriod(filterFrom) || !validPeriod(filterTo) ||
+        filterFrom > filterTo || filterTo > lastMaximum) {
+      setState('Selecciona un rango válido de meses.', 'error');
+      return;
+    }
+
+    // Congelar el filtro para que el archivo conserve el rango elegido
+    // aunque el usuario cambie los meses durante la descarga.
+    const desde = filterFrom;
+    const hasta = filterTo;
+    downloadInProgress = true;
+    downloadToggle.disabled = true;
+    exportButtons.forEach(button => { button.disabled = true; });
+    closeDownloadMenu(false);
+    setState('Preparando el CSV de ' + desde + ' a ' + hasta + '...', 'neutral');
+
+    try {
+      const params = new URLSearchParams({ canal, desde, hasta });
+      const response = await fetch(
+        '/api/gateway/listas-negras/exportar?' + params.toString(),
+        {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-store',
+          headers: { Accept: 'text/csv' }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
+        }
+        if (response.status === 403) {
+          throw new Error('Tu usuario no tiene permiso para descargar estos datos.');
+        }
+        if (response.status === 409) {
+          throw new Error('Hay meses sin importar dentro del rango solicitado.');
+        }
+        throw new Error('No se pudo generar el CSV (HTTP ' + response.status + ').');
+      }
+
+      const mime = (response.headers.get('content-type') || '').toLowerCase();
+      if (!mime.includes('text/csv')) {
+        throw new Error('El servidor no devolvió un archivo CSV válido.');
+      }
+
+      const blob = await response.blob();
+      if (blob.size === 0) throw new Error('El CSV descargado está vacío.');
+      const name = 'lista_negra_' + canal + '_' + desde + '_' + hasta + '.csv';
+      const objectUrl = URL.createObjectURL(blob);
+      try {
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = name;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } finally {
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+      }
+      setState('CSV generado para ' + desde + ' a ' + hasta + '.', 'success');
+    } catch (error) {
+      setState(error.message || 'No se pudo completar la descarga.', 'error');
+    } finally {
+      downloadInProgress = false;
+      downloadToggle.disabled = false;
+      exportButtons.forEach(button => { button.disabled = false; });
+    }
+  }
+
+  exportButtons.forEach(button => {
     button.addEventListener('click', () => {
-      closeDownloadMenu(false);
-      setState('La descarga de archivos CSV se habilitará próximamente.', 'neutral');
+      void exportFilteredCsv(button.dataset.canal);
     });
   });
 
