@@ -1,0 +1,60 @@
+/* Listas Negras: barras mensuales agregadas, sin PII. */
+.blacklists-view { display: none; padding: 28px 0 34px; }
+body.is-blacklists-view #blacklistsView { display: block; }
+body.is-blacklists-view .hero-card,
+body.is-blacklists-view .content-grid,
+body.is-blacklists-view #availabilityPanel,
+body.is-blacklists-view #successPanel,
+body.is-blacklists-view #historyView,
+body.is-blacklists-view #credentialsView { display: none !important; }
+.ln-panel { border: 1px solid var(--border); border-radius: 23px; background: var(--surface); padding: clamp(18px, 3vw, 32px); box-shadow: var(--shadow); }
+.ln-title-row { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; }
+.ln-eyebrow { display: block; color: var(--brand-500); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+.ln-title-row h2 { font-size: clamp(24px, 3vw, 36px); line-height: 1.12; letter-spacing: -.035em; margin: 0 0 9px; }
+.ln-description { margin: 0; line-height: 1.6; color: var(--text-soft); max-width: 740px; }
+.ln-refresh { border-radius: 12px; padding: 11px 17px; color: #fff; font-weight: 700; background: var(--brand-500); border: 0; }
+.ln-refresh:focus-visible, .ln-chart-card summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.ln-state { margin: 18px 0; border-radius: 13px; padding: 13px 16px; background: var(--surface-soft); color: var(--text); border: 1px solid var(--border); font-size: 13px; line-height: 1.55; }
+.ln-state[data-kind="error"] { color: var(--danger); background: var(--danger-soft); }
+.ln-state[data-kind="success"] { color: var(--success); background: var(--success-soft); }
+.ln-metadata { display: flex; flex-wrap: wrap; gap: 9px; margin: 14px 0 22px; }
+.ln-metadata span { padding: 6px 10px; border: 1px solid var(--border); border-radius: 100px; background: var(--surface-soft); color: var(--text-soft); font-size: 12px; }
+.ln-charts { display: grid; gap: 20px; }
+.ln-chart-card { border: 1px solid var(--border); background: var(--surface-raised); border-radius: 19px; padding: clamp(14px, 2.5vw, 24px); min-width: 0; }
+.ln-chart-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 15px; }
+.ln-chart-head h3 { font-size: clamp(17px, 2.4vw, 21px); margin: 0 0 5px; }
+.ln-chart-head p { font-size: 12px; color: var(--text-soft); margin: 0; }
+.ln-chart-value { flex: 0 0 auto; text-align: right; }
+.ln-chart-value strong { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+.ln-chart-value small { color: var(--text-soft); font-size: 11px; }
+.ln-plot-scroll { overflow-x: auto; max-width: 100%; padding: 8px 0 6px; scrollbar-width: thin; }
+.ln-plot { min-width: max-content; position: relative; }
+.ln-plot-upper { display: flex; justify-content: space-between; gap: 16px; padding: 0 10px 4px 0; color: var(--text-soft); font-size: 11px; }
+.ln-bar-track { display: flex; gap: 9px; align-items: flex-end; height: 206px; padding: 12px 9px 0; border-bottom: 1px solid var(--border-strong); background: repeating-linear-gradient(to top, transparent 0, transparent calc(25% - 1px), var(--border) 25%); border-radius: 7px 7px 0 0; }
+.ln-bar-unit { width: 42px; height: 100%; display: flex; flex: 0 0 42px; flex-direction: column; justify-content: flex-end; align-items: stretch; }
+.ln-bar { border-radius: 8px 8px 2px 2px; background: var(--brand-500); min-height: 2px; transition: height .2s ease; }
+.ln-chart-card[data-channel="whatsapp_100212"] .ln-bar { background: color-mix(in srgb, var(--brand-500) 77%, var(--brand-100)); }
+.ln-chart-card[data-channel="whatsapp_100327"] .ln-bar { background: color-mix(in srgb, var(--brand-700) 75%, var(--brand-400)); }
+.ln-bar.is-zero { min-height: 2px; opacity: .55; }
+.ln-bar.is-missing { background: none !important; height: 5px !important; min-height: 5px; border-top: 2px dashed var(--border-strong); border-radius: 0; }
+.ln-labels { display: flex; gap: 9px; padding: 7px 9px 0; }
+.ln-label { width: 42px; flex: 0 0 42px; font-size: 10px; color: var(--text-soft); text-align: center; white-space: nowrap; }
+.ln-chart-card details { margin-top: 12px; color: var(--text-soft); font-size: 12px; }
+.ln-chart-card summary { width: fit-content; cursor: pointer; font-weight: 700; padding: 6px 0; color: var(--brand-500); }
+.ln-chart-card table { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 12px; }
+.ln-chart-card th, .ln-chart-card td { text-align: left; padding: 9px 11px; border-bottom: 1px solid var(--border); }
+.ln-chart-card td:nth-child(2), .ln-chart-card th:nth-child(2) { text-align: right; font-variant-numeric: tabular-nums; }
+.ln-warning { margin: 20px 0 0; padding: 14px 17px; font-size: 12px; line-height: 1.6; color: var(--text-soft); border-left: 3px solid var(--warning); background: var(--warning-soft); border-radius: 0 9px 9px 0; }
+@media (max-width: 680px) {
+  .blacklists-view { padding-top: 16px; }
+  .ln-title-row { flex-direction: column; }
+  .ln-refresh { width: 100%; }
+  .ln-chart-head { flex-wrap: wrap; }
+  .ln-chart-value { text-align: left; }
+  .ln-bar-unit, .ln-label { width: 37px; flex-basis: 37px; }
+  .ln-bar-track, .ln-labels { gap: 7px; }
+}
+@media (prefers-reduced-motion: reduce) { .ln-bar { transition: none; } }
+
+/* La interfaz conserva la identidad morada TOGA y presenta una vista útil sin datos simulados. */
+.ln-chart-empty { margin-top: 8px; border: 1px dashed var(--border-strong); border-radius: 14px; min-height: 190px; display: grid; place-items: center; text-align: center; padding: 22px; background: repeating-linear-gradient(to top, transparent 0, transparent calc(25% - 1px), var(--border) 25%); color: var(--text-soft); font-size: 13px; line-height: 1.6; }
