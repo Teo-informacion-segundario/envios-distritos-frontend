@@ -26,7 +26,12 @@
     '<span class="ln-eyebrow">DATOS MENSUALES · INDIGITALL</span>',
     '<h2>Listas Negras</h2>',
     '<p class="ln-description">Contactos únicos por mes y canal.</p>',
-    '</div><button id="lnRefresh" class="ln-refresh" type="button">Actualizar métricas</button></div>',
+    '</div><div class="ln-toolbar">',
+    '<div class="ln-month-filters" role="group" aria-label="Filtrar gráficos por meses">',
+    '<label class="ln-month-field" for="lnMonthFrom"><span>Desde</span><input id="lnMonthFrom" type="month" min="2025-07" disabled /></label>',
+    '<label class="ln-month-field" for="lnMonthTo"><span>Hasta</span><input id="lnMonthTo" type="month" min="2025-07" disabled /></label>',
+    '</div><button id="lnRefresh" class="ln-refresh" type="button">Actualizar métricas</button>',
+    '</div></div>',
     '<div id="lnState" class="ln-state" role="status" aria-live="polite">Abre esta pestaña para consultar las métricas.</div>',
     '<div id="lnMetadata" class="ln-metadata" aria-label="Estado de los datos"></div>',
     '<div id="lnCharts" class="ln-charts"></div>',
@@ -38,8 +43,54 @@
   const metadata = section.querySelector('#lnMetadata');
   const charts = section.querySelector('#lnCharts');
   const refresh = section.querySelector('#lnRefresh');
+  const monthFrom = section.querySelector('#lnMonthFrom');
+  const monthTo = section.querySelector('#lnMonthTo');
   let inFlight = false;
   let lastPayload = null;
+  let filterFrom = '202507';
+  let filterTo = null;
+  let lastMaximum = null;
+
+  // El tooltip se sitúa sobre la barra y no se recorta en gráficos desplazables.
+  const tooltip = document.createElement('div');
+  tooltip.className = 'ln-tooltip';
+  tooltip.hidden = true;
+  tooltip.setAttribute('role', 'tooltip');
+  tooltip.innerHTML = '<span class="ln-tooltip-month"></span><span class="ln-tooltip-row"><i aria-hidden="true"></i><strong class="ln-tooltip-total"></strong></span>';
+  document.body.appendChild(tooltip);
+  let activeColumn = null;
+
+  function hideTooltip() {
+    tooltip.hidden = true;
+    activeColumn = null;
+  }
+
+  function showTooltip(point, bar, column, spec) {
+    activeColumn = column;
+    tooltip.dataset.channel = spec.id;
+    tooltip.querySelector('.ln-tooltip-month').textContent = monthFullLabel(point.periodo);
+    tooltip.querySelector('.ln-tooltip-total').textContent = point.unicos_mes === null
+      ? 'Sin dato disponible'
+      : formatter.format(point.unicos_mes) + ' contactos únicos';
+    tooltip.hidden = false;
+    const anchor = bar.getBoundingClientRect();
+    const rect = tooltip.getBoundingClientRect();
+    const left = Math.max(8, Math.min(window.innerWidth - rect.width - 8,
+      anchor.left + anchor.width / 2 - rect.width / 2));
+    const above = anchor.top - rect.height - 10;
+    const top = above >= 8 ? above : Math.min(window.innerHeight - rect.height - 8, anchor.bottom + 10);
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = Math.max(8, top) + 'px';
+  }
+
+  window.addEventListener('resize', hideTooltip, { passive: true });
+  window.addEventListener('scroll', hideTooltip, { passive: true, capture: true });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') hideTooltip();
+  });
+  document.addEventListener('pointerdown', event => {
+    if (activeColumn && !activeColumn.contains(event.target)) hideTooltip();
+  });
 
   function textElement(tag, className, value) {
     const el = document.createElement(tag);
@@ -58,6 +109,21 @@
     const month = Number(period.slice(4, 6));
     return new Date(Date.UTC(year, month - 1, 1))
       .toLocaleDateString('es-PE', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+  }
+
+  function monthFullLabel(period) {
+    const year = Number(period.slice(0, 4));
+    const month = Number(period.slice(4, 6));
+    return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(
+      'es-PE', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  }
+
+  function periodToInput(period) {
+    return period.slice(0, 4) + '-' + period.slice(4, 6);
+  }
+
+  function inputToPeriod(value) {
+    return /^\d{4}-\d{2}$/.test(value) ? value.replace('-', '') : null;
   }
 
   function validPeriod(value) {
@@ -100,19 +166,39 @@
     return data;
   }
 
+  function updateMonthFilters(data) {
+    const previousMaximum = lastMaximum;
+    const firstMonth = data.series
+      .flatMap(series => series.puntos.map(point => point.periodo))
+      .sort()[0] || '202507';
+    const minimum = firstMonth < '202507' ? '202507' : firstMonth;
+    const maximum = data.periodo_maximo;
+
+    if (filterTo === null || filterTo === previousMaximum) filterTo = maximum;
+    if (filterFrom < minimum) filterFrom = minimum;
+    if (filterFrom > maximum) filterFrom = maximum;
+    if (filterTo > maximum) filterTo = maximum;
+    if (filterTo < filterFrom) filterTo = filterFrom;
+    lastMaximum = maximum;
+
+    monthFrom.min = monthTo.min = periodToInput(minimum);
+    monthFrom.max = monthTo.max = periodToInput(maximum);
+    monthFrom.value = periodToInput(filterFrom);
+    monthTo.value = periodToInput(filterTo);
+    monthFrom.disabled = false;
+    monthTo.disabled = false;
+  }
+
   function renderMetadata(data) {
     metadata.replaceChildren();
-    const values = [
-      'Último período: ' + data.periodo_maximo,
-      'Zona horaria: America/Lima',
-      'No aprobado · Solo revisión',
-      'Versión: ' + data.version_prepublicacion.slice(0, 12)
-    ];
-    for (const value of values) metadata.appendChild(textElement('span', '', value));
+    metadata.appendChild(textElement('span', '', 'Último período: ' + data.periodo_maximo));
   }
 
   function renderSeries(spec, source) {
-    const points = source.puntos.slice().sort((a, b) => a.periodo.localeCompare(b.periodo));
+    const points = source.puntos
+      .filter(p => p.periodo >= filterFrom && p.periodo <= filterTo)
+      .slice()
+      .sort((a, b) => a.periodo.localeCompare(b.periodo));
     const card = document.createElement('article');
     card.className = 'ln-chart-card';
     card.dataset.channel = spec.id;
@@ -133,6 +219,11 @@
     metric.appendChild(textElement('small', '', latest ? 'Contactos únicos · ' + latest.periodo : 'Sin períodos'));
     head.appendChild(metric);
     card.appendChild(head);
+
+    if (!points.length) {
+      card.appendChild(textElement('p', 'ln-no-results', 'No hay datos para los meses seleccionados.'));
+      return card;
+    }
 
     const scroll = document.createElement('div');
     scroll.className = 'ln-plot-scroll';
@@ -155,43 +246,33 @@
     track.className = 'ln-bar-track';
     const labels = document.createElement('div');
     labels.className = 'ln-labels';
-    for (const p of points) {
+    for (const point of points) {
       const col = document.createElement('div');
       col.className = 'ln-bar-unit';
       const bar = document.createElement('div');
-      const missing = p.unicos_mes === null;
-      bar.className = 'ln-bar' + (missing ? ' is-missing' : p.unicos_mes === 0 ? ' is-zero' : '');
-      bar.style.height = missing ? '5px' : String(Math.max(0.2, p.unicos_mes / ymax * 100)) + '%';
-      const displayed = missing ? 'sin dato' : formatter.format(p.unicos_mes) + ' contactos únicos';
-      bar.title = p.periodo + ': ' + displayed + ' · ' + p.estado;
-      bar.setAttribute('aria-label', bar.title);
+      const missing = point.unicos_mes === null;
+      bar.className = 'ln-bar' + (missing ? ' is-missing' : point.unicos_mes === 0 ? ' is-zero' : '');
+      bar.style.height = missing ? '5px' : String(Math.max(0.2, point.unicos_mes / ymax * 100)) + '%';
+      bar.setAttribute('aria-hidden', 'true');
+
+      const displayed = missing ? 'Sin dato disponible' : formatter.format(point.unicos_mes) + ' contactos únicos';
+      col.setAttribute('role', 'img');
+      col.tabIndex = 0;
+      col.setAttribute('aria-label', monthFullLabel(point.periodo) + ': ' + displayed);
       col.appendChild(bar);
+      col.addEventListener('pointerenter', () => showTooltip(point, bar, col, spec));
+      col.addEventListener('pointerleave', hideTooltip);
+      col.addEventListener('focus', () => showTooltip(point, bar, col, spec));
+      col.addEventListener('blur', hideTooltip);
+      col.addEventListener('click', () => showTooltip(point, bar, col, spec));
       track.appendChild(col);
-      labels.appendChild(textElement('span', 'ln-label', monthLabel(p.periodo)));
+      labels.appendChild(textElement('span', 'ln-label', monthLabel(point.periodo)));
     }
     plot.appendChild(track);
     plot.appendChild(labels);
     scroll.appendChild(plot);
     card.appendChild(scroll);
 
-    const details = document.createElement('details');
-    details.appendChild(textElement('summary', '', 'Ver tabla mensual accesible'));
-    const table = document.createElement('table');
-    const header = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    ['Período', 'Contactos únicos', 'Estado'].forEach(x => headerRow.appendChild(textElement('th', '', x)));
-    header.appendChild(headerRow);
-    table.appendChild(header);
-    const body = document.createElement('tbody');
-    for (const p of points) {
-      const tr = document.createElement('tr');
-      const cells = [p.periodo, p.unicos_mes === null ? '—' : formatter.format(p.unicos_mes), p.estado];
-      cells.forEach(x => tr.appendChild(textElement('td', '', x)));
-      body.appendChild(tr);
-    }
-    table.appendChild(body);
-    details.appendChild(table);
-    card.appendChild(details);
     return card;
   }
 
@@ -222,13 +303,15 @@
   }
 
   function render(data) {
+    hideTooltip();
     lastPayload = data;
+    updateMonthFilters(data);
     renderMetadata(data);
     charts.replaceChildren();
     channels.forEach(spec => {
       charts.appendChild(renderSeries(spec, data.series.find(s => s.id === spec.id)));
     });
-    setState('Tres series cargadas correctamente. Valores ausentes mostrados como “—”.', 'success');
+    setState('Métricas actualizadas.', 'success');
   }
 
   async function load(force) {
@@ -266,6 +349,26 @@
       refresh.disabled = false;
     }
   }
+
+  function applyMonthFilter(changed) {
+    if (!lastPayload) return;
+    const from = inputToPeriod(monthFrom.value);
+    const to = inputToPeriod(monthTo.value);
+    if (!validPeriod(from) || !validPeriod(to)) {
+      setState('Selecciona meses válidos para filtrar.', 'error');
+      return;
+    }
+    filterFrom = from;
+    filterTo = to;
+    if (filterFrom > filterTo) {
+      if (changed === 'from') filterTo = filterFrom;
+      else filterFrom = filterTo;
+    }
+    render(lastPayload);
+  }
+
+  monthFrom.addEventListener('change', () => applyMonthFilter('from'));
+  monthTo.addEventListener('change', () => applyMonthFilter('to'));
 
   renderUnavailable();
 
