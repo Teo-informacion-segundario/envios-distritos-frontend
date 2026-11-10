@@ -27,9 +27,9 @@
     '<h2>Listas Negras</h2>',
     '<p class="ln-description">Contactos únicos por mes y canal.</p>',
     '</div><div class="ln-toolbar">',
-    '<div class="ln-month-filters" role="group" aria-label="Filtrar gráficos por meses">',
-    '<label class="ln-month-field" for="lnMonthFrom"><span>Desde</span><input id="lnMonthFrom" type="month" min="2025-07" disabled /></label>',
-    '<label class="ln-month-field" for="lnMonthTo"><span>Hasta</span><input id="lnMonthTo" type="month" min="2025-07" disabled /></label>',
+    '<div class="ln-period-controls" role="group" aria-label="Filtrar gráficos por meses">',
+    '<button id="lnMonthFromBtn" class="ln-period-btn" type="button" aria-haspopup="dialog" aria-controls="lnMonthPicker" aria-expanded="false" disabled><span class="ln-period-btn-label">Desde</span><span class="ln-period-btn-icon" aria-hidden="true">▦</span></button>',
+    '<button id="lnMonthToBtn" class="ln-period-btn" type="button" aria-haspopup="dialog" aria-controls="lnMonthPicker" aria-expanded="false" disabled><span class="ln-period-btn-label">Hasta</span><span class="ln-period-btn-icon" aria-hidden="true">▦</span></button>',
     '</div><button id="lnRefresh" class="ln-refresh" type="button">Actualizar métricas</button>',
     '</div></div>',
     '<div id="lnState" class="ln-state" role="status" aria-live="polite">Abre esta pestaña para consultar las métricas.</div>',
@@ -43,13 +43,46 @@
   const metadata = section.querySelector('#lnMetadata');
   const charts = section.querySelector('#lnCharts');
   const refresh = section.querySelector('#lnRefresh');
-  const monthFrom = section.querySelector('#lnMonthFrom');
-  const monthTo = section.querySelector('#lnMonthTo');
+  const monthFromBtn = section.querySelector('#lnMonthFromBtn');
+  const monthToBtn = section.querySelector('#lnMonthToBtn');
   let inFlight = false;
   let lastPayload = null;
   let filterFrom = '202507';
   let filterTo = null;
   let lastMaximum = null;
+  let firstAvailable = '202507';
+  let pickerTarget = null;
+  let pickerYear = 2025;
+
+  const MONTHS_SHORT = ['Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.', 'Jul.', 'Ago.', 'Set.', 'Oct.', 'Nov.', 'Dic.'];
+  const MONTHS_FULL = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+  // Selector de meses visual: se monta fuera de los contenedores con overflow.
+  const monthPicker = document.createElement('div');
+  monthPicker.id = 'lnMonthPicker';
+  monthPicker.className = 'ln-month-picker';
+  monthPicker.hidden = true;
+  monthPicker.setAttribute('role', 'dialog');
+  monthPicker.setAttribute('aria-modal', 'false');
+  monthPicker.setAttribute('aria-label', 'Seleccionar mes para filtrar');
+  monthPicker.innerHTML = [
+    '<div class="ln-month-picker-card">',
+    '<div class="ln-month-picker-head">',
+    '<button class="ln-picker-nav" data-move="-1" type="button" aria-label="Año anterior">←</button>',
+    '<strong class="ln-picker-year" aria-live="polite"></strong>',
+    '<button class="ln-picker-nav" data-move="1" type="button" aria-label="Año siguiente">→</button>',
+    '</div>',
+    '<div class="ln-month-grid" role="group" aria-label="Meses del año"></div>',
+    '<div class="ln-month-picker-foot">',
+    '<button class="ln-picker-clear" type="button">Limpiar</button>',
+    '<button class="ln-picker-today" type="button" title="Mes actual, limitado a los datos disponibles">Hoy</button>',
+    '</div></div>'
+  ].join('');
+  document.body.appendChild(monthPicker);
+  const pickerYearLabel = monthPicker.querySelector('.ln-picker-year');
+  const pickerGrid = monthPicker.querySelector('.ln-month-grid');
+  const pickerNavs = [...monthPicker.querySelectorAll('.ln-picker-nav')];
 
   // El tooltip se sitúa sobre la barra y no se recorta en gráficos desplazables.
   const tooltip = document.createElement('div');
@@ -118,13 +151,146 @@
       'es-PE', { month: 'long', year: 'numeric', timeZone: 'UTC' });
   }
 
-  function periodToInput(period) {
-    return period.slice(0, 4) + '-' + period.slice(4, 6);
+  function fullPeriodLabel(period) {
+    if (!validPeriod(period)) return 'Seleccionar mes';
+    return MONTHS_FULL[Number(period.slice(4, 6)) - 1] + ' ' + period.slice(0, 4);
   }
 
-  function inputToPeriod(value) {
-    return /^\d{4}-\d{2}$/.test(value) ? value.replace('-', '') : null;
+  function buildPeriod(year, month) {
+    return String(year) + String(month).padStart(2, '0');
   }
+
+  function updatePickerButtons() {
+    monthFromBtn.querySelector('.ln-period-btn-label').textContent = 'Desde · ' + fullPeriodLabel(filterFrom);
+    monthToBtn.querySelector('.ln-period-btn-label').textContent = 'Hasta · ' + fullPeriodLabel(filterTo);
+    const ready = Boolean(lastPayload);
+    monthFromBtn.disabled = !ready;
+    monthToBtn.disabled = !ready;
+  }
+
+  function positionPicker() {
+    if (!pickerTarget || monthPicker.hidden) return;
+    const btn = pickerTarget === 'from' ? monthFromBtn : monthToBtn;
+    const a = btn.getBoundingClientRect();
+    const b = monthPicker.getBoundingClientRect();
+    const x = Math.max(8, Math.min(a.left, window.innerWidth - b.width - 8));
+    const roomBelow = window.innerHeight - a.bottom;
+    const y = roomBelow >= b.height + 8 || a.top < b.height + 8
+      ? a.bottom + 8
+      : a.top - b.height - 8;
+    monthPicker.style.left = Math.round(x) + 'px';
+    monthPicker.style.top = Math.round(Math.max(8, Math.min(y, window.innerHeight - b.height - 8))) + 'px';
+  }
+
+  function renderMonthPicker() {
+    if (!pickerTarget) return;
+    const minYear = Number(firstAvailable.slice(0, 4));
+    const maxYear = Number(lastMaximum.slice(0, 4));
+    pickerYear = Math.min(maxYear, Math.max(minYear, pickerYear));
+    pickerYearLabel.textContent = String(pickerYear);
+    pickerNavs.forEach(btn => {
+      const direction = Number(btn.dataset.move);
+      btn.disabled = pickerYear + direction < minYear || pickerYear + direction > maxYear;
+    });
+    pickerGrid.replaceChildren();
+    const selected = pickerTarget === 'from' ? filterFrom : filterTo;
+    for (let month = 1; month <= 12; month++) {
+      const value = buildPeriod(pickerYear, month);
+      const choice = document.createElement('button');
+      choice.type = 'button';
+      choice.className = 'ln-month-chip';
+      choice.textContent = MONTHS_SHORT[month - 1];
+      choice.dataset.period = value;
+      choice.disabled = value < firstAvailable || value > lastMaximum;
+      choice.classList.toggle('is-selected', selected === value);
+      choice.setAttribute('aria-pressed', String(selected === value));
+      choice.setAttribute('aria-label', fullPeriodLabel(value));
+      pickerGrid.appendChild(choice);
+    }
+  }
+
+  function closeMonthPicker(restoreFocus) {
+    if (!pickerTarget) return;
+    const trigger = pickerTarget === 'from' ? monthFromBtn : monthToBtn;
+    pickerTarget = null;
+    monthPicker.hidden = true;
+    monthFromBtn.setAttribute('aria-expanded', 'false');
+    monthToBtn.setAttribute('aria-expanded', 'false');
+    if (restoreFocus) trigger.focus();
+  }
+
+  function openMonthPicker(target) {
+    if (!lastPayload) return;
+    if (pickerTarget === target) {
+      closeMonthPicker(true);
+      return;
+    }
+    const button = target === 'from' ? monthFromBtn : monthToBtn;
+    pickerTarget = target;
+    pickerYear = Number((target === 'from' ? filterFrom : filterTo).slice(0, 4));
+    monthPicker.setAttribute('aria-label', target === 'from' ? 'Seleccionar mes inicial' : 'Seleccionar mes final');
+    monthPicker.hidden = false;
+    monthFromBtn.setAttribute('aria-expanded', String(target === 'from'));
+    monthToBtn.setAttribute('aria-expanded', String(target === 'to'));
+    renderMonthPicker();
+    positionPicker();
+    const focused = pickerGrid.querySelector('.is-selected:not(:disabled)')
+      || pickerGrid.querySelector('button:not(:disabled)');
+    if (focused) focused.focus();
+    else button.focus();
+  }
+
+  function chooseMonth(value) {
+    if (!pickerTarget || !validPeriod(value) || value < firstAvailable || value > lastMaximum) return;
+    if (pickerTarget === 'from') {
+      filterFrom = value;
+      if (filterFrom > filterTo) filterTo = filterFrom;
+    } else {
+      filterTo = value;
+      if (filterTo < filterFrom) filterFrom = filterTo;
+    }
+    closeMonthPicker(true);
+    if (lastPayload) render(lastPayload);
+  }
+
+  monthFromBtn.addEventListener('click', () => openMonthPicker('from'));
+  monthToBtn.addEventListener('click', () => openMonthPicker('to'));
+  pickerGrid.addEventListener('click', event => {
+    const button = event.target.closest('button[data-period]');
+    if (button && !button.disabled) chooseMonth(button.dataset.period);
+  });
+  pickerNavs.forEach(button => {
+    button.addEventListener('click', () => {
+      if (button.disabled || !pickerTarget) return;
+      pickerYear += Number(button.dataset.move);
+      renderMonthPicker();
+      button.focus();
+    });
+  });
+  monthPicker.querySelector('.ln-picker-clear').addEventListener('click', () => {
+    if (!pickerTarget) return;
+    chooseMonth(pickerTarget === 'from' ? firstAvailable : lastMaximum);
+  });
+  monthPicker.querySelector('.ln-picker-today').addEventListener('click', () => {
+    if (!pickerTarget) return;
+    const now = new Date();
+    const current = buildPeriod(now.getFullYear(), now.getMonth() + 1);
+    chooseMonth(current < firstAvailable ? firstAvailable : current > lastMaximum ? lastMaximum : current);
+  });
+  document.addEventListener('pointerdown', event => {
+    if (!pickerTarget) return;
+    if (monthPicker.contains(event.target) ||
+        monthFromBtn.contains(event.target) || monthToBtn.contains(event.target)) return;
+    closeMonthPicker(false);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && pickerTarget) {
+      event.preventDefault();
+      closeMonthPicker(true);
+    }
+  });
+  window.addEventListener('resize', () => { if (pickerTarget) positionPicker(); }, { passive: true });
+  window.addEventListener('scroll', () => { if (pickerTarget) closeMonthPicker(false); }, { passive: true, capture: true });
 
   function validPeriod(value) {
     if (!/^\d{6}$/.test(String(value))) return false;
@@ -179,14 +345,9 @@
     if (filterFrom > maximum) filterFrom = maximum;
     if (filterTo > maximum) filterTo = maximum;
     if (filterTo < filterFrom) filterTo = filterFrom;
+    firstAvailable = minimum;
     lastMaximum = maximum;
-
-    monthFrom.min = monthTo.min = periodToInput(minimum);
-    monthFrom.max = monthTo.max = periodToInput(maximum);
-    monthFrom.value = periodToInput(filterFrom);
-    monthTo.value = periodToInput(filterTo);
-    monthFrom.disabled = false;
-    monthTo.disabled = false;
+    updatePickerButtons();
   }
 
   function renderMetadata(data) {
@@ -343,6 +504,8 @@
       renderUnavailable();
       metadata.replaceChildren();
       lastPayload = null;
+      updatePickerButtons();
+      closeMonthPicker(false);
       setState(error.message || 'No se pudieron consultar las métricas.', 'error');
     } finally {
       inFlight = false;
@@ -350,29 +513,10 @@
     }
   }
 
-  function applyMonthFilter(changed) {
-    if (!lastPayload) return;
-    const from = inputToPeriod(monthFrom.value);
-    const to = inputToPeriod(monthTo.value);
-    if (!validPeriod(from) || !validPeriod(to)) {
-      setState('Selecciona meses válidos para filtrar.', 'error');
-      return;
-    }
-    filterFrom = from;
-    filterTo = to;
-    if (filterFrom > filterTo) {
-      if (changed === 'from') filterTo = filterFrom;
-      else filterFrom = filterTo;
-    }
-    render(lastPayload);
-  }
-
-  monthFrom.addEventListener('change', () => applyMonthFilter('from'));
-  monthTo.addEventListener('change', () => applyMonthFilter('to'));
-
   renderUnavailable();
 
   nav.addEventListener('click', () => {
+    closeMonthPicker(false);
     document.body.classList.remove('is-history-view', 'is-credentials-view');
     document.body.classList.add('is-blacklists-view');
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('is-active'));
@@ -385,6 +529,7 @@
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-view]');
     if (target && target !== nav) {
+      closeMonthPicker(false);
       document.body.classList.remove('is-blacklists-view');
       nav.classList.remove('is-active');
     }
