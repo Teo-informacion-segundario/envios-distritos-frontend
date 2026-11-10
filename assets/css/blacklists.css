@@ -233,13 +233,30 @@ body.is-blacklists-view #credentialsView { display: none !important; }
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
-.ln-download-icon { font-size: 17px; line-height: 1; font-weight: 650; }
-.ln-download-chevron {
-  font-size: 18px;
+.ln-download-toggle {
+  display: inline-grid;
+  grid-template-columns: 18px max-content 16px;
+  align-items: center;
+  column-gap: 9px;
+  line-height: 1.2;
+}
+.ln-download-label { display: block; line-height: 1.2; }
+.ln-download-icon, .ln-download-chevron {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 18px;
+  height: 18px;
   line-height: 1;
-  margin-left: 4px;
+}
+.ln-download-chevron {
+  width: 16px;
+  height: 16px;
+  margin-left: 0;
   transition: transform .15s ease;
 }
+.ln-download-icon svg { display: block; width: 17px; height: 17px; }
+.ln-download-chevron svg { display: block; width: 15px; height: 15px; }
 .ln-download-toggle[aria-expanded="true"] .ln-download-chevron { transform: rotate(180deg); }
 .ln-download-menu {
   position: absolute;
