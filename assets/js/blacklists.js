@@ -10,9 +10,9 @@
 
   const ENDPOINT = '/api/gateway/listas-negras/indicadores?desde=202507';
   const channels = [
-    { id: 'email', title: 'Email · 100212', sub: 'Correos únicos con evento registrado' },
-    { id: 'whatsapp_100212', title: 'WhatsApp · 100212', sub: 'Celulares peruanos únicos con channel_error' },
-    { id: 'whatsapp_100327', title: 'WhatsApp · 100327', sub: 'Celulares peruanos únicos con channel_error' }
+    { id: 'email', title: 'EMAIL', sub: 'Correos únicos con evento registrado' },
+    { id: 'whatsapp_100212', title: 'WSP Nexo INMOBILIARIA', sub: 'Celulares peruanos únicos con channel_error' },
+    { id: 'whatsapp_100327', title: 'WSP NEXO MKT Y SERVICIOS', sub: 'Celulares peruanos únicos con channel_error' }
   ];
   const formatter = new Intl.NumberFormat('es-PE');
 
@@ -30,7 +30,17 @@
     '<div class="ln-period-controls" role="group" aria-label="Filtrar gráficos por meses">',
     '<button id="lnMonthFromBtn" class="ln-period-btn" type="button" aria-haspopup="dialog" aria-controls="lnMonthPicker" aria-expanded="false" disabled><span class="ln-period-btn-label">Desde</span><span class="ln-period-btn-icon" aria-hidden="true">▦</span></button>',
     '<button id="lnMonthToBtn" class="ln-period-btn" type="button" aria-haspopup="dialog" aria-controls="lnMonthPicker" aria-expanded="false" disabled><span class="ln-period-btn-label">Hasta</span><span class="ln-period-btn-icon" aria-hidden="true">▦</span></button>',
-    '</div><button id="lnRefresh" class="ln-refresh" type="button">Actualizar métricas</button>',
+    '</div>',
+    '<div class="ln-download-wrap">',
+    '<button id="lnDownloadToggle" class="ln-download-toggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="lnDownloadMenu">',
+    '<span class="ln-download-icon" aria-hidden="true">↓</span><span>Descarga</span><span class="ln-download-chevron" aria-hidden="true">⌄</span>',
+    '</button>',
+    '<div id="lnDownloadMenu" class="ln-download-menu" hidden role="group" aria-label="Opciones de descarga CSV">',
+    '<button type="button" class="ln-download-option" aria-disabled="true" title="Descarga disponible próximamente">Descargar .CSV de Email</button>',
+    '<button type="button" class="ln-download-option" aria-disabled="true" title="Descarga disponible próximamente">Descargar .CSV de WSP Nexo Inmobiliaria</button>',
+    '<button type="button" class="ln-download-option" aria-disabled="true" title="Descarga disponible próximamente">Descargar .CSV de WSP Nexo MKT y Servicios</button>',
+    '</div></div>',
+    '<button id="lnRefresh" class="ln-refresh" type="button">Actualizar métricas</button>',
     '</div></div>',
     '<div id="lnState" class="ln-state" role="status" aria-live="polite">Abre esta pestaña para consultar las métricas.</div>',
     '<div id="lnMetadata" class="ln-metadata" aria-label="Estado de los datos"></div>',
@@ -45,6 +55,9 @@
   const refresh = section.querySelector('#lnRefresh');
   const monthFromBtn = section.querySelector('#lnMonthFromBtn');
   const monthToBtn = section.querySelector('#lnMonthToBtn');
+  const downloadToggle = section.querySelector('#lnDownloadToggle');
+  const downloadMenu = section.querySelector('#lnDownloadMenu');
+  const downloadWrap = section.querySelector('.ln-download-wrap');
   let inFlight = false;
   let lastPayload = null;
   let filterFrom = '202507';
@@ -253,8 +266,49 @@
     if (lastPayload) render(lastPayload);
   }
 
-  monthFromBtn.addEventListener('click', () => openMonthPicker('from'));
-  monthToBtn.addEventListener('click', () => openMonthPicker('to'));
+
+  // El menú de descargas es visual por ahora. Nunca solicita CSV ni expone datos.
+  function closeDownloadMenu(restoreFocus = false) {
+    const wasOpen = !downloadMenu.hidden;
+    downloadMenu.hidden = true;
+    downloadToggle.setAttribute('aria-expanded', 'false');
+    if (restoreFocus && wasOpen) downloadToggle.focus();
+  }
+
+  downloadToggle.addEventListener('click', () => {
+    const open = downloadMenu.hidden;
+    if (open) closeMonthPicker(false);
+    downloadMenu.hidden = !open;
+    downloadToggle.setAttribute('aria-expanded', String(open));
+  });
+
+  downloadMenu.querySelectorAll('.ln-download-option').forEach(button => {
+    button.addEventListener('click', () => {
+      closeDownloadMenu(false);
+      setState('La descarga de archivos CSV se habilitará próximamente.', 'neutral');
+    });
+  });
+
+  document.addEventListener('pointerdown', event => {
+    if (!downloadMenu.hidden && !downloadWrap.contains(event.target)) {
+      closeDownloadMenu(false);
+    }
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !downloadMenu.hidden) {
+      event.preventDefault();
+      closeDownloadMenu(true);
+    }
+  });
+
+  monthFromBtn.addEventListener('click', () => {
+    closeDownloadMenu(false);
+    openMonthPicker('from');
+  });
+  monthToBtn.addEventListener('click', () => {
+    closeDownloadMenu(false);
+    openMonthPicker('to');
+  });
   pickerGrid.addEventListener('click', event => {
     const button = event.target.closest('button[data-period]');
     if (button && !button.disabled) chooseMonth(button.dataset.period);
@@ -516,6 +570,7 @@
   renderUnavailable();
 
   nav.addEventListener('click', () => {
+    closeDownloadMenu(false);
     closeMonthPicker(false);
     document.body.classList.remove('is-history-view', 'is-credentials-view');
     document.body.classList.add('is-blacklists-view');
@@ -529,11 +584,15 @@
   document.addEventListener('click', event => {
     const target = event.target.closest('[data-view]');
     if (target && target !== nav) {
+      closeDownloadMenu(false);
       closeMonthPicker(false);
       document.body.classList.remove('is-blacklists-view');
       nav.classList.remove('is-active');
     }
   }, true);
 
-  refresh.addEventListener('click', () => { void load(true); });
+  refresh.addEventListener('click', () => {
+    closeDownloadMenu(false);
+    void load(true);
+  });
 })();
