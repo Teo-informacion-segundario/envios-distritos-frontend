@@ -25,12 +25,11 @@
     '<div class="ln-title-row"><div>',
     '<span class="ln-eyebrow">DATOS MENSUALES · INDIGITALL</span>',
     '<h2>Listas Negras</h2>',
-    '<p class="ln-description">Contactos únicos por mes y canal. Cada gráfico se calcula por separado; los valores no deben sumarse entre canales.</p>',
+    '<p class="ln-description">Contactos únicos por mes y canal.</p>',
     '</div><button id="lnRefresh" class="ln-refresh" type="button">Actualizar métricas</button></div>',
     '<div id="lnState" class="ln-state" role="status" aria-live="polite">Abre esta pestaña para consultar las métricas.</div>',
     '<div id="lnMetadata" class="ln-metadata" aria-label="Estado de los datos"></div>',
     '<div id="lnCharts" class="ln-charts"></div>',
-    '<p class="ln-warning">Histórico importado para revisión, no certificado como exhaustivo ni aprobado para envíos. Febrero de 2026 contiene excepciones auditadas; los períodos o valores sin datos se muestran como “—”, nunca como cero.</p>',
     '</div>'
   ].join('');
   main.appendChild(section);
