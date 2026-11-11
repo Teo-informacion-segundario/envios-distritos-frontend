@@ -76,7 +76,7 @@
   }
 
   function applyStatus(data) {
-    if (!data || !/^\\d{6}$/.test(String(data.periodo)) ||
+    if (!data || !/^\d{6}$/.test(String(data.periodo)) ||
         data.zona_horaria !== 'America/Lima' ||
         typeof data.permitido !== 'boolean') {
       throw new Error('Respuesta de autorización mensual inválida.');
