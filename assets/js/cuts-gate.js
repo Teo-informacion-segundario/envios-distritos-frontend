@@ -37,6 +37,8 @@
   let busy = false;
   let requestVersion = 0;
   let authenticated = false;
+  let processing = false;
+  let flow2Ready = false;
 
   function periodLabel(code) {
     if (!/^\d{6}$/.test(String(code))) return 'mes actual';
@@ -74,25 +76,47 @@
   }
 
   function applyStatus(data) {
-    if (!data || data.contrato !== 'cortes_gate_v1' ||
-        !/^\d{6}$/.test(String(data.periodo)) ||
+    if (!data || !/^\\d{6}$/.test(String(data.periodo)) ||
         data.zona_horaria !== 'America/Lima' ||
-        typeof data.permitido !== 'boolean' ||
-        typeof data.puede_permitir !== 'boolean') {
+        typeof data.permitido !== 'boolean') {
       throw new Error('Respuesta de autorización mensual inválida.');
     }
+
     period = data.periodo;
-    allowed = data.permitido;
-    canAllow = data.puede_permitir;
+    flow2Ready = data.contrato === 'cortes_gate_v2' &&
+      ['bloqueado', 'procesando', 'fallido', 'habilitado'].includes(data.estado) &&
+      typeof data.puede_iniciar === 'boolean';
+
+    // El contrato anterior permitía aprobar sin procesar el histórico.
+    // Nunca habilitar cortes con esa aprobación antigua.
+    allowed = flow2Ready && data.estado === 'habilitado' && data.permitido === true;
+    processing = flow2Ready && data.estado === 'procesando';
+    canAllow = flow2Ready && data.puede_iniciar && !processing && !allowed;
+
     applyLock(!allowed);
     panel.classList.toggle('is-allowed', allowed);
     const label = periodLabel(period);
-    title.textContent = allowed ? 'Cortes habilitados' : 'Cortes bloqueados';
-    message.textContent = allowed
-      ? 'Generar corte e Historial están disponibles para ' + label + '. El primer día del próximo mes volverán a bloquearse.'
-      : 'Generar corte e Historial están bloqueados para ' + label + '. Solo un administrador puede habilitarlos.';
-    allowButton.disabled = allowed || !canAllow || busy;
-    allowButton.querySelector('span').textContent = allowed ? 'Cortes permitidos' : 'Permitir Cortes';
+
+    if (!flow2Ready) {
+      title.textContent = 'Cortes bloqueados';
+      message.textContent = 'El cruce y publicación del histórico aún no están conectados. La autorización directa no habilita cortes.';
+    } else if (allowed) {
+      title.textContent = 'Cortes habilitados';
+      message.textContent = 'Histórico depurado y verificado para ' + label + '. Generar corte e Historial están disponibles.';
+    } else if (processing) {
+      title.textContent = 'Procesando listas negras';
+      message.textContent = 'Cruzando el histórico y verificando la subida a Google Drive. Los cortes seguirán bloqueados.';
+    } else if (data.estado === 'fallido') {
+      title.textContent = 'No se completó el proceso';
+      message.textContent = 'La actualización del histórico no se confirmó. Los cortes siguen bloqueados. Revisa el resultado del flujo.';
+    } else {
+      title.textContent = 'Cortes bloqueados';
+      message.textContent = 'El histórico debe procesarse y publicarse para habilitar los cortes de ' + label + '.';
+    }
+    allowButton.disabled = !canAllow || busy;
+    allowButton.querySelector('span').textContent = allowed
+      ? 'Cortes permitidos'
+      : processing ? 'Procesando...' : 'Permitir Cortes';
   }
 
   async function api(path, options) {
@@ -133,33 +157,40 @@
   }
 
   allowButton.addEventListener('click', async () => {
-    if (busy || !authenticated || allowed || !canAllow || !period) return;
+    if (busy || !authenticated || allowed || !canAllow || processing || !period) return;
     const label = periodLabel(period);
     const confirmed = window.confirm(
-      '¿Permitir Generar corte e Historial durante ' + label + '? ' +
-      'Esta autorización queda registrada en el VPS y vence al comenzar el siguiente mes.'
+      '¿Iniciar el cruce de listas negras y la actualización del histórico para ' + label + '? ' +
+      'Generar corte e Historial seguirán bloqueados hasta verificar la subida completa a Google Drive.'
     );
     if (!confirmed) return;
     busy = true;
     allowButton.disabled = true;
-    allowButton.querySelector('span').textContent = 'Autorizando...';
+    allowButton.querySelector('span').textContent = 'Iniciando proceso...';
     const myRequest = ++requestVersion;
     try {
-      const data = await api('/permitir', {
+      await api('/iniciar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ periodo: period })
       });
-      if (myRequest === requestVersion) applyStatus(data);
+      if (myRequest === requestVersion) {
+        processing = true;
+        applyLock(true);
+        title.textContent = 'Procesando listas negras';
+        message.textContent = 'El flujo 2 está en ejecución. Los cortes permanecen bloqueados hasta la publicación verificada.';
+      }
+      await refreshStatus();
     } catch (error) {
       if (myRequest === requestVersion) {
-        showBlocked(error.message || 'No se pudo habilitar el mes.');
+        showBlocked(error.message || 'No se pudo iniciar el cruce del histórico.');
         await refreshStatus();
       }
     } finally {
       busy = false;
-      allowButton.querySelector('span').textContent = allowed ? 'Cortes permitidos' : 'Permitir Cortes';
-      allowButton.disabled = allowed || !canAllow;
+      allowButton.querySelector('span').textContent = allowed
+        ? 'Cortes permitidos' : processing ? 'Procesando...' : 'Permitir Cortes';
+      allowButton.disabled = !canAllow;
     }
   });
 
@@ -200,7 +231,10 @@
       if (authenticated) void refreshStatus();
     });
     window.setInterval(() => {
-      if (authenticated) void refreshStatus();
+      if (authenticated && processing) void refreshStatus();
+    }, 10000);
+    window.setInterval(() => {
+      if (authenticated && !processing) void refreshStatus();
     }, 60000);
   }
 })();
