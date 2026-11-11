@@ -47,6 +47,7 @@
     '<div id="lnState" class="ln-state" role="status" aria-live="polite">Abre esta pestaña para consultar las métricas.</div>',
     '<div id="lnMetadata" class="ln-metadata" aria-label="Estado de los datos"></div>',
     '<div id="lnCharts" class="ln-charts"></div>',
+    '<div id="lnCutsGateMount" class="ln-cuts-gate-mount"></div>',
     '</div>'
   ].join('');
   main.appendChild(section);
