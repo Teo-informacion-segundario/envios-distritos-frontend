@@ -472,6 +472,9 @@
   }
 
   async function requestHistoryPage(requestPage, requestLimit) {
+    if (CONFIG.authEnabled && window.TOGA_CUTS_GATE?.allowed !== true) {
+      throw new Error('El historial esta bloqueado hasta que se habilite el mes desde Listas Negras.');
+    }
     if (!CONFIG.gatewayWebhook) {
       throw new Error('No está configurado el gateway de n8n.');
     }
