@@ -265,6 +265,9 @@
   }
 
   async function callGateway(payload, accion) {
+    if (CONFIG.authEnabled && window.TOGA_CUTS_GATE?.allowed !== true) {
+      throw new Error('Cortes bloqueados. Ingresa a Listas Negras y pulsa Permitir Cortes cuando corresponda.');
+    }
     if (!CONFIG.gatewayWebhook) {
       throw new Error('Falta configurar gatewayWebhook en assets/js/config.js.');
     }
