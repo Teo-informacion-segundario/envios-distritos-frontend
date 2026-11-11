@@ -513,6 +513,9 @@
   }
 
   async function callServices(payload) {
+    if (CONFIG.authEnabled && window.TOGA_CUTS_GATE?.allowed !== true) {
+      throw new Error('Cortes bloqueados. Primero debes habilitar el mes desde Listas Negras.');
+    }
     if (!CONFIG.servicesGateway) {
       throw new Error('SERVICIOS está disponible desde el dominio productivo.');
     }
