@@ -301,3 +301,55 @@ body.is-blacklists-view #credentialsView { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .ln-download-toggle, .ln-download-chevron { transition: none; }
 }
+
+
+/* Permitir Cortes: control mensual debajo del tercer gráfico. */
+.ln-cuts-gate-mount { margin-top: 23px; }
+.ln-cuts-gate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: clamp(18px, 2.5vw, 26px);
+  border: 1px solid color-mix(in srgb, var(--brand-500) 25%, var(--border));
+  border-radius: 18px;
+  background: var(--surface-raised);
+}
+.ln-cuts-gate-copy { min-width: 0; }
+.ln-cuts-gate-kicker { margin-bottom: 7px; font-size: 11px; font-weight: 800; letter-spacing: .075em; color: var(--brand-500); }
+.ln-cuts-gate h3 { margin: 0 0 7px; font-size: clamp(16px, 2vw, 20px); color: var(--text); }
+.ln-cuts-gate p { max-width: 650px; margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-soft); }
+.ln-allow-cuts {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 11px 22px;
+  flex: 0 0 auto;
+  border: 1px solid var(--brand-500);
+  border-radius: 13px;
+  background: var(--brand-500);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: filter .15s ease, box-shadow .15s ease;
+}
+.ln-allow-cuts svg { width: 18px; height: 18px; flex: none; }
+.ln-allow-cuts:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 6px 18px rgba(73,58,255,.18); }
+.ln-allow-cuts:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.ln-allow-cuts:disabled { opacity: .56; cursor: not-allowed; }
+.ln-cuts-gate.is-allowed { border-color: color-mix(in srgb, var(--success) 30%, var(--border)); }
+.ln-cuts-gate.is-allowed .ln-allow-cuts { background: var(--surface-soft); color: var(--text-soft); border-color: var(--border); opacity: .9; }
+body.cuts-gate-locked [data-view="generator"],
+body.cuts-gate-locked [data-view="history"] { opacity: .46; cursor: not-allowed; }
+body.cuts-gate-locked [data-view="generator"].is-active,
+body.cuts-gate-locked [data-view="history"].is-active { background: transparent; }
+@media (max-width: 680px) {
+  .ln-cuts-gate { flex-direction: column; align-items: stretch; }
+  .ln-allow-cuts { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .ln-allow-cuts { transition: none; } }
