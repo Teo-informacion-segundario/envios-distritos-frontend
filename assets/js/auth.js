@@ -45,6 +45,7 @@
     resetScrollPosition();
     revealResolvedAuthState();
     window.requestAnimationFrame(resetScrollPosition);
+    document.dispatchEvent(new Event('toga:session-ready'));
   }
 
   function api(path, options = {}) {
