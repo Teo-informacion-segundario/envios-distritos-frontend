@@ -178,8 +178,15 @@
     refresh() { return refreshStatus(); }
   });
 
-  applyLock(true);
-  if (cfg.authEnabled) {
+  if (!cfg.authEnabled) {
+    // No interrumpir el modo local de desarrollo sin autenticación/API.
+    allowed = true;
+    applyLock(false);
+    title.textContent = 'Control mensual en producción';
+    message.textContent = 'El bloqueo mensual se aplica al iniciar sesión en el servidor productivo.';
+    allowButton.disabled = true;
+  } else {
+    applyLock(true);
     document.addEventListener('toga:session-ready', () => {
       authenticated = true;
       // Al entrar con sesión se repite también la consulta de métricas.
