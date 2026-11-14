@@ -353,3 +353,137 @@ body.cuts-gate-locked [data-view="history"].is-active { background: transparent;
   .ln-allow-cuts { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .ln-allow-cuts { transition: none; } }
+
+
+/* Flujo 2: confirmacion, progreso y resultado. Variables del tema TOGA. */
+.ln-flow2-overlay[hidden],
+.ln-flow2-action[hidden] { display: none !important; }
+body.ln-flow2-modal-open { overflow: hidden; }
+.ln-flow2-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(11, 9, 51, .62);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+.ln-flow2-dialog {
+  width: min(100%, 480px);
+  max-height: min(92dvh, 800px);
+  overflow-y: auto;
+  padding: clamp(24px, 5vw, 34px);
+  border: 1px solid color-mix(in srgb, var(--brand-500) 22%, var(--border));
+  border-radius: 24px;
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: 0 28px 90px rgba(8, 0, 55, .27);
+  text-align: left;
+}
+.ln-flow2-dialog:focus { outline: none; }
+.ln-flow2-emblem {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  margin-bottom: 19px;
+  border-radius: 19px;
+  background: var(--surface-soft);
+  color: var(--brand-500);
+  font-size: 28px;
+  font-weight: 800;
+}
+.ln-flow2-eyebrow {
+  margin: 0 0 9px;
+  color: var(--brand-500);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .11em;
+}
+.ln-flow2-dialog h2 {
+  margin: 0 0 11px;
+  color: var(--text);
+  font-size: clamp(23px, 4vw, 27px);
+  letter-spacing: -.04em;
+  line-height: 1.2;
+}
+.ln-flow2-dialog p {
+  margin: 0;
+  max-width: 100%;
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.ln-flow2-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0 12px;
+}
+.ln-flow2-details > div {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+.ln-flow2-details span { color: var(--text-soft); font-size: 11px; }
+.ln-flow2-details strong { color: var(--text); font-size: 13px; text-transform: capitalize; }
+.ln-flow2-note {
+  min-height: 40px;
+  padding: 12px 13px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--brand-500) 7%, var(--surface));
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ln-flow2-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+.ln-flow2-action {
+  min-height: 45px;
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: filter .18s ease, transform .18s ease;
+}
+.ln-flow2-action:hover:not(:disabled) { filter: brightness(1.07); transform: translateY(-1px); }
+.ln-flow2-action:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.ln-flow2-action--primary { background: var(--brand-500); color: #fff; }
+.ln-flow2-action--secondary { background: var(--surface-soft); border-color: var(--border); color: var(--text); }
+.ln-flow2-overlay[data-phase="starting"] .ln-flow2-emblem,
+.ln-flow2-overlay[data-phase="processing"] .ln-flow2-emblem { background: color-mix(in srgb, var(--brand-500) 9%, var(--surface)); }
+.ln-flow2-spinner {
+  display: none;
+  width: 31px;
+  height: 31px;
+  border: 3px solid color-mix(in srgb, var(--brand-500) 22%, transparent);
+  border-top-color: var(--brand-500);
+  border-radius: 50%;
+  animation: ln-flow2-spin .9s linear infinite;
+}
+.ln-flow2-overlay[data-phase="starting"] .ln-flow2-spinner,
+.ln-flow2-overlay[data-phase="processing"] .ln-flow2-spinner { display: block; }
+.ln-flow2-overlay[data-phase="starting"] .ln-flow2-mark,
+.ln-flow2-overlay[data-phase="processing"] .ln-flow2-mark { display: none; }
+.ln-flow2-overlay[data-phase="success"] .ln-flow2-emblem { background: var(--success-soft); color: var(--success); }
+.ln-flow2-overlay[data-phase="error"] .ln-flow2-emblem { background: var(--danger-soft); color: var(--danger); }
+@keyframes ln-flow2-spin { to { transform: rotate(360deg); } }
+@media (max-width: 520px) {
+  .ln-flow2-overlay { padding: 12px; }
+  .ln-flow2-dialog { border-radius: 20px; padding: 23px 20px; }
+  .ln-flow2-actions { flex-direction: column-reverse; }
+  .ln-flow2-action { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ln-flow2-spinner { animation-duration: 2.5s; }
+  .ln-flow2-action { transition: none; }
+}
