@@ -67,6 +67,7 @@
   let inFlight = false;
   let downloadInProgress = false;
   let lastPayload = null;
+  let lastBaseSnapshot = null;
   let filterFrom = '202507';
   let filterTo = null;
   let lastMaximum = null;
@@ -676,8 +677,10 @@
           !Number.isSafeInteger(data.total_filas) || data.total_filas < 0) {
         throw new Error('La fuente manual todavía no tiene un resultado validado.');
       }
+      lastBaseSnapshot = data;
       if (lastPayload) replaceBaseNegativaCard(baseNegativaCard(data));
     } catch (error) {
+      lastBaseSnapshot = null;
       if (lastPayload) replaceBaseNegativaCard(
         baseNegativaCard(null, error.message || 'No se pudo consultar la base negativa.'));
     }
@@ -719,7 +722,7 @@
     channels.forEach(spec => {
       charts.appendChild(renderSeries(spec, data.series.find(s => s.id === spec.id)));
     });
-    charts.appendChild(baseNegativaCard());
+    charts.appendChild(baseNegativaCard(lastBaseSnapshot));
     setState('Métricas actualizadas.', 'success');
   }
 
