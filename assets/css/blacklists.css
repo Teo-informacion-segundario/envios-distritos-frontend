@@ -487,3 +487,29 @@ body.ln-flow2-modal-open { overflow: hidden; }
   .ln-flow2-spinner { animation-duration: 2.5s; }
   .ln-flow2-action { transition: none; }
 }
+
+
+/* Base Negativa: cuarto grafico de total vigente, independiente del filtro de meses. */
+.ln-chart-card--base-negativa .ln-plot--snapshot {
+  min-width: 0;
+  width: 100%;
+}
+.ln-chart-card--base-negativa .ln-plot--snapshot .ln-bar-track,
+.ln-chart-card--base-negativa .ln-plot--snapshot .ln-labels {
+  justify-content: center;
+  gap: 0;
+}
+.ln-chart-card--base-negativa .ln-plot--snapshot .ln-bar-unit,
+.ln-chart-card--base-negativa .ln-plot--snapshot .ln-label {
+  width: clamp(74px, 15vw, 130px);
+  flex-basis: clamp(74px, 15vw, 130px);
+}
+.ln-chart-card--base-negativa .ln-bar {
+  background: var(--brand-500);
+}
+.ln-base-negativa-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-soft);
+  margin: 13px 0 0;
+}

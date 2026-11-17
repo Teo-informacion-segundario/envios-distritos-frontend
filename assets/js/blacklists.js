@@ -9,6 +9,9 @@
   if (!nav || !main) return;
 
   const ENDPOINT = '/api/gateway/listas-negras/indicadores?desde=202507';
+  // Fuente manual sin periodos: se consulta por separado para no alterar las 3 series de Indigitall.
+  const BASE_NEGATIVA_ENDPOINT = '/api/gateway/listas-negras/base-negativa/resumen';
+  const BASE_NEGATIVA_ID = 'base_negativa';
   const channels = [
     { id: 'email', title: 'EMAIL', sub: 'Correos únicos con evento registrado' },
     { id: 'whatsapp_100212', title: 'WSP Nexo INMOBILIARIA', sub: 'Celulares peruanos únicos con channel_error' },
@@ -23,9 +26,9 @@
   section.innerHTML = [
     '<div class="ln-panel">',
     '<div class="ln-title-row"><div>',
-    '<span class="ln-eyebrow">DATOS MENSUALES · INDIGITALL</span>',
+    '<span class="ln-eyebrow">LISTAS NEGRAS · FUENTES CONSOLIDADAS</span>',
     '<h2>Listas Negras</h2>',
-    '<p class="ln-description">Contactos únicos por mes y canal.</p>',
+    '<p class="ln-description">Contactos únicos por mes y consolidado de la base negativa manual.</p>',
     '</div><div class="ln-toolbar">',
     '<div class="ln-period-controls" role="group" aria-label="Filtrar gráficos por meses">',
     '<button id="lnMonthFromBtn" class="ln-period-btn" type="button" aria-haspopup="dialog" aria-controls="lnMonthPicker" aria-expanded="false" disabled><span class="ln-period-btn-label">Desde</span><span class="ln-period-btn-icon" aria-hidden="true">▦</span></button>',
@@ -574,6 +577,112 @@
     return card;
   }
 
+
+  // Cuarto grafico: un total actual, NO una serie mensual inventada.
+  // La fuente vive en el VPS; el navegador solo recibe cantidades agregadas.
+  function baseNegativaCard(summary = null, errorText = '') {
+    const card = document.createElement('article');
+    card.className = 'ln-chart-card ln-chart-card--base-negativa';
+    card.dataset.channel = BASE_NEGATIVA_ID;
+    card.setAttribute('aria-label', 'Base Negativa Consolidado, total de registros depurados');
+
+    const head = document.createElement('div');
+    head.className = 'ln-chart-head';
+    const copy = document.createElement('div');
+    copy.appendChild(textElement('h3', '', 'BASE NEGATIVA · CONSOLIDADO'));
+    copy.appendChild(textElement('p', '', 'Contactos depurados sin duplicados · total vigente de Google Sheets'));
+    head.appendChild(copy);
+
+    const metric = document.createElement('div');
+    metric.className = 'ln-chart-value';
+    const ready = summary && summary.estado === 'listo' &&
+      Number.isSafeInteger(summary.total_filas) && summary.total_filas >= 0;
+    metric.appendChild(textElement('strong', '', ready ? formatter.format(summary.total_filas) : '—'));
+    metric.appendChild(textElement('small', '', ready ? 'Filas únicas · snapshot actual' : 'Sin lectura validada'));
+    head.appendChild(metric);
+    card.appendChild(head);
+
+    if (!ready) {
+      card.appendChild(textElement('div', 'ln-chart-empty',
+        errorText || 'Pendiente de sincronización y validación de la hoja desde el VPS.'));
+      return card;
+    }
+
+    const scroll = document.createElement('div');
+    scroll.className = 'ln-plot-scroll';
+    const plot = document.createElement('div');
+    plot.className = 'ln-plot ln-plot--snapshot';
+    const upper = document.createElement('div');
+    upper.className = 'ln-plot-upper';
+    upper.appendChild(textElement('span', '', 'Total único'));
+    upper.appendChild(textElement('span', '', formatter.format(summary.total_filas) + ' filas'));
+    plot.appendChild(upper);
+
+    const track = document.createElement('div');
+    track.className = 'ln-bar-track';
+    const unit = document.createElement('div');
+    unit.className = 'ln-bar-unit';
+    unit.setAttribute('role', 'img');
+    unit.setAttribute('tabindex', '0');
+    unit.setAttribute('aria-label', formatter.format(summary.total_filas) + ' filas únicas de Base Negativa Consolidado');
+    const bar = document.createElement('div');
+    bar.className = 'ln-bar' + (summary.total_filas === 0 ? ' is-zero' : '');
+    bar.style.height = summary.total_filas === 0 ? '2px' : '100%';
+    unit.appendChild(bar);
+    track.appendChild(unit);
+    plot.appendChild(track);
+
+    const labels = document.createElement('div');
+    labels.className = 'ln-labels';
+    labels.appendChild(textElement('span', 'ln-label', 'Total actual'));
+    plot.appendChild(labels);
+    scroll.appendChild(plot);
+    card.appendChild(scroll);
+
+    const note = document.createElement('p');
+    note.className = 'ln-base-negativa-note';
+    let lastRead = 'última lectura no indicada';
+    if (typeof summary.actualizado_utc === 'string') {
+      const parsed = new Date(summary.actualizado_utc);
+      if (Number.isFinite(parsed.getTime())) {
+        lastRead = parsed.toLocaleString('es-PE', {
+          timeZone: 'America/Lima', dateStyle: 'medium', timeStyle: 'short'
+        });
+      }
+    }
+    note.textContent = 'Fuente manual sin fecha por fila. Lectura verificada: ' + lastRead +
+      '. El filtro mensual de Indigitall no modifica este total.';
+    card.appendChild(note);
+    return card;
+  }
+
+  function replaceBaseNegativaCard(card) {
+    const current = charts.querySelector('[data-channel="base_negativa"]');
+    if (current) current.replaceWith(card);
+    else charts.appendChild(card);
+  }
+
+  async function loadBaseNegativa() {
+    try {
+      const response = await fetch(BASE_NEGATIVA_ENDPOINT, {
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { Accept: 'application/json' }
+      });
+      if (!response.ok) throw new Error('El VPS aún no confirmó la fuente manual.');
+      const data = await response.json();
+      if (!data || data.contrato !== 'ln_base_negativa_v1' ||
+          data.estado !== 'listo' ||
+          !Number.isSafeInteger(data.total_filas) || data.total_filas < 0) {
+        throw new Error('La fuente manual todavía no tiene un resultado validado.');
+      }
+      if (lastPayload) replaceBaseNegativaCard(baseNegativaCard(data));
+    } catch (error) {
+      if (lastPayload) replaceBaseNegativaCard(
+        baseNegativaCard(null, error.message || 'No se pudo consultar la base negativa.'));
+    }
+  }
+
   function renderUnavailable() {
     charts.replaceChildren();
     for (const spec of channels) {
@@ -598,6 +707,7 @@
       card.appendChild(empty);
       charts.appendChild(card);
     }
+    charts.appendChild(baseNegativaCard());
   }
 
   function render(data) {
@@ -609,6 +719,7 @@
     channels.forEach(spec => {
       charts.appendChild(renderSeries(spec, data.series.find(s => s.id === spec.id)));
     });
+    charts.appendChild(baseNegativaCard());
     setState('Métricas actualizadas.', 'success');
   }
 
@@ -637,6 +748,7 @@
       }
       const payload = validate(await response.json());
       render(payload);
+      await loadBaseNegativa();
     } catch (error) {
       renderUnavailable();
       metadata.replaceChildren();
