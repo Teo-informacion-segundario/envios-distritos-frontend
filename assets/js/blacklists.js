@@ -672,10 +672,21 @@
       });
       if (!response.ok) throw new Error('El VPS aún no confirmó la fuente manual.');
       const data = await response.json();
-      if (!data || data.contrato !== 'ln_base_negativa_v1' ||
-          data.estado !== 'listo' ||
+      if (!data || data.contrato !== 'ln_base_negativa_v1') {
+        throw new Error('Respuesta inesperada del indicador de Base Negativa.');
+      }
+      // Noviembre se publico antes de integrar la cuarta fuente.
+      // "pendiente" es un estado valido, no un error ni una autorizacion.
+      if (data.estado === 'pendiente') {
+        lastBaseSnapshot = null;
+        if (lastPayload) replaceBaseNegativaCard(baseNegativaCard(
+          null, 'Pendiente del primer cruce mensual publicado con Base Negativa.'
+        ));
+        return;
+      }
+      if (data.estado !== 'listo' ||
           !Number.isSafeInteger(data.total_filas) || data.total_filas < 0) {
-        throw new Error('La fuente manual todavía no tiene un resultado validado.');
+        throw new Error('La fuente manual devolvio metricas invalidas.');
       }
       lastBaseSnapshot = data;
       if (lastPayload) replaceBaseNegativaCard(baseNegativaCard(data));
