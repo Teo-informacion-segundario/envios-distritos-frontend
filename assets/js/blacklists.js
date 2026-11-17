@@ -585,13 +585,13 @@
     const card = document.createElement('article');
     card.className = 'ln-chart-card ln-chart-card--base-negativa';
     card.dataset.channel = BASE_NEGATIVA_ID;
-    card.setAttribute('aria-label', 'Base Negativa Consolidado, total de registros depurados');
+    card.setAttribute('aria-label', 'Base Negativa CODIP, total de registros depurados');
 
     const head = document.createElement('div');
     head.className = 'ln-chart-head';
     const copy = document.createElement('div');
-    copy.appendChild(textElement('h3', '', 'BASE NEGATIVA · CONSOLIDADO'));
-    copy.appendChild(textElement('p', '', 'Contactos depurados sin duplicados · total vigente de Google Sheets'));
+    copy.appendChild(textElement('h3', '', 'BASE NEGATIVA CODIP'));
+    copy.appendChild(textElement('p', '', 'Contactos únicos depurados · total vigente de Google Sheets'));
     head.appendChild(copy);
 
     const metric = document.createElement('div');
@@ -599,7 +599,7 @@
     const ready = summary && summary.estado === 'listo' &&
       Number.isSafeInteger(summary.total_filas) && summary.total_filas >= 0;
     metric.appendChild(textElement('strong', '', ready ? formatter.format(summary.total_filas) : '—'));
-    metric.appendChild(textElement('small', '', ready ? 'Filas únicas · snapshot actual' : 'Sin lectura validada'));
+    metric.appendChild(textElement('small', '', ready ? 'Filas únicas · lectura verificada' : 'Sin lectura validada'));
     head.appendChild(metric);
     card.appendChild(head);
 
@@ -651,7 +651,10 @@
         });
       }
     }
-    note.textContent = 'Fuente manual sin fecha por fila. Lectura verificada: ' + lastRead +
+    note.textContent = (summary.origen === 'lectura_verificada'
+      ? 'Hoja verificada para el panel; esta lectura aún no certifica una publicación del histórico. '
+      : 'Fuente incluida en un cruce publicado. ') +
+      'Última lectura: ' + lastRead +
       '. El filtro mensual de Indigitall no modifica este total.';
     card.appendChild(note);
     return card;
